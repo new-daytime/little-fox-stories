@@ -763,7 +763,8 @@ const TOUR=[
   {t:'The Gift Shop is real',b:'Spend coins on real Starbucks cards and Apple Pay cash. Some rewards you win free just by hitting milestones. You can claim a little every day. Tap Claim and it goes straight to Friendship 7. He’ll pay up.'},
   {t:'16 Moon Shards',b:'Hidden across every story and hunt. Find all 16 for the legendary Moon Prize: $1,000. It will take a while. That’s the point.'},
   {t:'Keep it safe',b:'Your progress lives on this phone. Now and then I’ll remind you to copy a save code. Paste it in your Notes app and nothing gets lost.'},
-  {t:'New stuff every Friday',b:'New chapters drop on Fridays, and weekly quests reset. Check “Things to do” at the top any time you’re not sure what to do. Tap the ? button up top to see this tour again. (Friendship 7 gets a little note when you play, so he knows when to make new chapters.)'}];
+  {t:'New stuff every Friday',b:'New chapters drop on Fridays, and weekly quests reset. Check “Things to do” at the top any time you’re not sure what to do. Tap the ? button up top to see this tour again.'},
+  {t:'A quick note',b:'This game shares basic gameplay info with Friendship 7, like what you played and how far you got, to help make the game better. Nothing else.'}];
 $('helpBtn').onclick=()=>tour(0);
 function tour(i,then){ i=i||0; const s=TOUR[i];
   openModal('<p class="eyebrow" style="color:#a0573a">Camp tour · '+(i+1)+' of '+TOUR.length+'</p><h2 id="mTitle">'+esc(s.t.replace('{name}',p.name||'hunter'))+'</h2>'+guide(esc(s.b))+'<div class="dots">'+TOUR.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join('')+'</div><div class="sheet-btns">'+(i?'<button class="ghost" id="tBack">Back</button>':'')+'<button id="tNext">'+(i<TOUR.length-1?'Next':'Let’s go')+'</button></div>');
