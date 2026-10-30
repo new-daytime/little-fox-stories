@@ -869,12 +869,12 @@ document.addEventListener('click',e=>{
   if(b.dataset.legend){ if(shardCount()<16||p.milestones.moon) return; p.milestones.moon=true; const code=claim('moon','The Moon Prize'); renderAll(); showCode(code,R('moon')); }
   if(b.dataset.shard!==undefined){ const s=SHARDS[+b.dataset.shard]; $('shardInfo').textContent='Shard '+(+b.dataset.shard+1)+': '+s.name+(s.test(p)?' · Found!':''); }
 });
-function backup(){ const data={v:1,profile:p,events:LS.get('foxEvents',[]),stories:LS.get('foxStoriesDone',{}),hunt:LS.get('foxHunt',{})}; let code; try{ code='FOXSAVE.'+btoa(unescape(encodeURIComponent(JSON.stringify(data)))); }catch(e){ toast('Couldn’t make a save code'); return; } copyText(code,'Save code copied. Paste it in your Notes app.'); p.lastBackup=Date.now(); save(); renderNudges(); }
+function backup(){ const data={v:1,camp:LS.get('foxCampaign1',null),profile:p,events:LS.get('foxEvents',[]),stories:LS.get('foxStoriesDone',{}),hunt:LS.get('foxHunt',{})}; let code; try{ code='FOXSAVE.'+btoa(unescape(encodeURIComponent(JSON.stringify(data)))); }catch(e){ toast('Couldn’t make a save code'); return; } copyText(code,'Save code copied. Paste it in your Notes app.'); p.lastBackup=Date.now(); save(); renderNudges(); }
 $('copySave').onclick=backup;
 $('restoreBtn').onclick=()=>{ const raw=$('restoreBox').value.trim(); if(!raw.startsWith('FOXSAVE.')){ toast('That doesn’t look like a save code'); return; }
   let d; try{ d=JSON.parse(decodeURIComponent(escape(atob(raw.slice(8))))); }catch(e){ toast('That save code is damaged. Try copying it again.'); return; }
   openModal('<h2 id="mTitle">Restore this save?</h2><p>This replaces the progress on this device with the save code’s progress.</p><div class="sheet-btns"><button class="ghost" id="rNo">Cancel</button><button class="gold" id="rYes">Restore</button></div>');
-  $('rNo').onclick=closeModal; $('rYes').onclick=()=>{ LS.set('foxProfile',d.profile); LS.set('foxEvents',d.events||[]); LS.set('foxStoriesDone',d.stories||{}); LS.set('foxHunt',d.hunt||{}); p=Object.assign({},JSON.parse(JSON.stringify(DEF)),d.profile); closeModal(); $('restoreBox').value=''; renderAll(); toast('Progress restored'); }; };
+  $('rNo').onclick=closeModal; $('rYes').onclick=()=>{ LS.set('foxProfile',d.profile); LS.set('foxEvents',d.events||[]); LS.set('foxStoriesDone',d.stories||{}); LS.set('foxHunt',d.hunt||{}); if(d.camp) LS.set('foxCampaign1',d.camp); p=Object.assign({},JSON.parse(JSON.stringify(DEF)),d.profile); closeModal(); $('restoreBox').value=''; renderAll(); toast('Progress restored'); }; };
 $('renameBtn').onclick=()=>askName(false);
 $('tourBtn').onclick=()=>tour(0);
 
