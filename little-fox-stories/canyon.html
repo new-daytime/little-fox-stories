@@ -506,14 +506,14 @@ function feat(x,z){ let minS=1e9,ws=0,hs=0,zone=null,zs=1e9;
   for(const zn of ZONES){ const s=Math.hypot(x-zn.x,z-zn.z)-zn.r; const w=Math.exp(-Math.max(s,-zn.r*.5)*.35); ws+=w; hs+=w*zn.h; if(s<minS) minS=s; if(s<zs){ zs=s; zone=zn; } }
   for(const p of PATHS){ const A=ZB[p.a],B=ZB[p.b]; const q=segQ(x,z,A.x,A.z,B.x,B.z); const s=q.d-p.w; const w=Math.exp(-Math.max(s,-p.w*.5)*.35); ws+=w; hs+=w*lerp(A.h,B.h,q.t); if(s<minS) minS=s; }
   return {s:minS,h:hs/ws,zone,zs}; }
-function CH(x,z){ const f=feat(x,z); const wall=f.s>0?smooth(0,9,f.s)*(15+n2(x*.5,z*.5)*6)+smooth(10,40,f.s)*10:0; const stream=streamDist(x,z); return f.h+n2(x,z)*.25+wall-(stream<1.9?(1.9-stream)*.35:0)-pondDip(x,z)+(REGID==='mojave'?mojH(x,z,f):0)+(REGID==='wilds'?wildsH(x,z):0); }
+function CH(x,z){ const f=feat(x,z); const wall=f.s>0?(REGID==='wilds'?smooth(0,18,f.s)*(3+n2(x*.3,z*.3)*2.2)+smooth(18,80,f.s)*9:smooth(0,9,f.s)*(15+n2(x*.5,z*.5)*6)+smooth(10,40,f.s)*10):0; const stream=streamDist(x,z); return f.h+n2(x,z)*.25+wall-(stream<1.9?(1.9-stream)*.35:0)-pondDip(x,z)+(REGID==='mojave'?mojH(x,z,f):0)+(REGID==='wilds'?wildsH(x,z):0); }
 function pondDip(x,z){ if(!ZB.pond) return 0; const d=Math.hypot(x-ZB.pond.x,z-ZB.pond.z); return d<8?(8-d)*.16:0; }
 let STREAM=[[-50,-36],[-38,-44],[-26,-52],[-14,-58],[-2,-66]];
 REGIONS.canyon={ZONES,PATHS,ZB,STREAM,name:'The Canyon'};
 function setRegion(id){ REGID=id; const R=REGIONS[id]; ZONES=R.ZONES; PATHS=R.PATHS; ZB=R.ZB; STREAM=R.STREAM; }
 function streamDist(x,z){ let d=1e9; for(let i=0;i<STREAM.length-1;i++){ const q=segQ(x,z,STREAM[i][0],STREAM[i][1],STREAM[i+1][0],STREAM[i+1][1]); d=Math.min(d,q.d); } return d; }
 function routeTo(fromX,fromZ,goal){ const start=feat(fromX,fromZ).zone.id; const prev={[start]:null}, q=[start]; while(q.length){ const c=q.shift(); if(c===goal) break; for(const p of PATHS){ const n=p.a===c?p.b:p.b===c?p.a:null; if(n&&!(n in prev)&&!ZB[n].hidden){ prev[n]=c; q.push(n); } } } const r=[]; let c=goal; while(c){ r.unshift(ZB[c]); c=prev[c]; } return r.slice(1).map(z=>({x:z.x,z:z.z})); }
-function walkClamp(o,r){ const f=feat(o.x,o.z); const lim=-(r||.6); if(f.s>lim){ const e=.25; const gx=(feat(o.x+e,o.z).s-feat(o.x-e,o.z).s)/(2*e), gz=(feat(o.x,o.z+e).s-feat(o.x,o.z-e).s)/(2*e); const gl=Math.hypot(gx,gz)||1; const push=f.s-lim; o.x-=gx/gl*push; o.z-=gz/gl*push; return true; } return false; }
+function walkClamp(o,r){ const f=feat(o.x,o.z); const lim=REGID==='wilds'?11:-(r||.6); if(f.s>lim){ const e=.25; const gx=(feat(o.x+e,o.z).s-feat(o.x-e,o.z).s)/(2*e), gz=(feat(o.x,o.z+e).s-feat(o.x,o.z-e).s)/(2*e); const gl=Math.hypot(gx,gz)||1; const push=f.s-lim; o.x-=gx/gl*push; o.z-=gz/gl*push; return true; } return false; }
 
 let canyon=null;
 function buildCanyon(){
@@ -659,88 +659,113 @@ function buildMojave(){
 /* =============== THE WILDS (free roam) =============== */
 REGIONS.wilds=(()=>{
   const ZONES=[
-    {id:'gate',name:'The Moon Gate',x:0,z:2,r:19,h:0,floor:'#8f86b8',alt:'#7f9ab0'},
-    {id:'mush',name:'Glowshroom Wood',x:-34,z:-30,r:20,h:1,floor:'#6f6aa0',alt:'#5f8a8f'},
-    {id:'lake',name:'Lantern Lake',x:26,z:-38,r:20,h:0,floor:'#7a9ab8',alt:'#6f8fa8'},
-    {id:'meadow',name:'Starfall Meadow',x:-8,z:-72,r:20,h:2,floor:'#8fa6a0',alt:'#a99ac9'},
-    {id:'tree',name:'The Sleeping Tree',x:32,z:-90,r:16,h:3,floor:'#7f8f7a',alt:'#6f7f6a'},
-    {id:'edge',name:'The Far Gate',x:-6,z:-112,r:8,h:2,floor:'#6a6290',alt:'#5a5280'}];
-  const PATHS=[{a:'gate',b:'mush',w:5},{a:'gate',b:'lake',w:5},{a:'mush',b:'meadow',w:5},{a:'lake',b:'meadow',w:5},{a:'lake',b:'tree',w:4.5},{a:'meadow',b:'tree',w:4.5},{a:'meadow',b:'edge',w:3.5}];
+    {id:'gate',name:'The Moon Gate',x:0,z:0,r:26,h:0,floor:'#8a78c8',alt:'#78a8c0'},
+    {id:'mush',name:'Glowshroom Wood',x:-40,z:-36,r:26,h:1,floor:'#7268b4',alt:'#5f98a4'},
+    {id:'lake',name:'Lantern Lake',x:28,z:-40,r:24,h:0,floor:'#7f9ccc',alt:'#70aab8'},
+    {id:'meadow',name:'Starfall Meadow',x:-6,z:-80,r:28,h:2,floor:'#8fb088',alt:'#a894d4'},
+    {id:'tree',name:'The Sleeping Tree',x:38,z:-98,r:22,h:3,floor:'#84a878',alt:'#74986a'},
+    {id:'edge',name:'The Far Gate',x:-8,z:-126,r:12,h:2,floor:'#7a68b0',alt:'#6a58a0'}];
+  const PATHS=[{a:'gate',b:'mush',w:12},{a:'gate',b:'lake',w:12},{a:'mush',b:'meadow',w:12},{a:'lake',b:'meadow',w:12},{a:'lake',b:'tree',w:10},{a:'meadow',b:'tree',w:12},{a:'meadow',b:'edge',w:8},{a:'gate',b:'meadow',w:10}];
   return {ZONES,PATHS,ZB:Object.fromEntries(ZONES.map(z=>[z.id,z])),STREAM:[],name:'The Wilds'}; })();
 const WONDERS=[
   {id:'w-gate',x:5,z:-6,title:'The Moon Gate',text:'From this side, the gate isn’t a door at all. It’s a window. You can see your camp through it, tiny and warm, like a snow globe someone left on a shelf.',say:'Home looks so small.'},
-  {id:'w-shrooms',x:-30,z:-24,title:'Glowshroom Wood',text:'You step on one mushroom and the whole forest lights up, one after another, like it’s passing a secret down the line. The {n:dragonfly} chases the glow.',say:'They’re saying hi!'},
-  {id:'w-lake',x:22,z:-30,title:'Lantern Lake',text:'Little islands float a few feet above the water. Nobody knows why. The lanterns on them never go out, even in the rain.',say:'Floating rocks. Normal.'},
-  {id:'w-meadow',x:-4,z:-66,title:'Starfall Meadow',text:'Every few nights a star falls here. The grass keeps a little of the light. Lie down and the whole meadow hums like a sleepy cat.',say:'I could nap here.'},
-  {id:'w-tree',x:28,z:-82,title:'The Sleeping Tree',text:'The oldest tree in the Wilds. It has been asleep for a hundred years. If you stand very still, you can hear it snore.',say:'Shhh. It’s sleeping.'}];
+  {id:'w-shrooms',x:-34,z:-28,title:'Glowshroom Wood',text:'You step on one mushroom and the whole forest lights up, one after another, like it’s passing a secret down the line. The {n:dragonfly} chases the glow.',say:'They’re saying hi!'},
+  {id:'w-lake',x:20,z:-28,title:'Lantern Lake',text:'Little islands float above the water. One of them pours a waterfall into the lake and nobody knows where the water comes from. The lanterns never go out, even in the rain.',say:'Floating rocks. Normal.'},
+  {id:'w-meadow',x:-10,z:-70,title:'Starfall Meadow',text:'Every few nights a star falls here. The flowers keep a little of the light. Lie down and the whole meadow hums like a sleepy cat.',say:'I could nap here.'},
+  {id:'w-tree',x:30,z:-88,title:'The Sleeping Tree',text:'The oldest tree in the Wilds. It has been asleep for a hundred years. If you stand very still, you can hear it snore.',say:'Shhh. It’s sleeping.'},
+  {id:'w-view',x:6,z:-50,y:13,title:'The Lookout',text:'From the top of the Lookout you can see everything: the floating mountains, the waterfall island, the moon close enough to touch. And way past the Far Gate… lights. Someone lives out there.',say:'Whoa.'}];
 const STONES=[
   {id:'s-lantern',x:-8,z:-14,title:'The Fox and the Lantern',text:'A little fox once found a lantern that only glowed when someone was thinking of her. Most nights it was dim. Then one night it blazed so bright the whole valley woke up. Somewhere, someone was thinking of her very hard. She kept the lantern by her bed after that. It was never dark again.'},
-  {id:'s-mushroom',x:-42,z:-36,title:'The Mushroom Who Wanted to Be a Moon',text:'There was a mushroom who stared at the moon every night and said, “Someday that’ll be me.” The other mushrooms laughed. So it practiced glowing. A little more each night. Now it’s the brightest thing in the forest, and the moon looks down at it and thinks, “Huh. Show-off.”'},
-  {id:'s-dragonfly',x:30,z:-46,title:'Why Dragonflies Hover',text:'Dragonflies can fly backward, sideways, and upside down. But mostly they hover. An old story says they’re waiting for someone. Not just anyone. One specific person. When that person walks by, the dragonfly follows, just to make sure they get home okay.'},
-  {id:'s-tree',x:38,z:-96,title:'The Tree That Fell Asleep',text:'The Sleeping Tree was awake once. It watched every sunrise for a thousand years and loved every single one. One morning it said, “I’ve seen enough beautiful things to dream about forever,” and closed its eyes. It’s smiling. Look closely. It’s still smiling.'}];
+  {id:'s-mushroom',x:-46,z:-30,title:'The Mushroom Who Wanted to Be a Moon',text:'There was a mushroom who stared at the moon every night and said, “Someday that’ll be me.” The other mushrooms laughed. So it practiced glowing. A little more each night. Now it’s the brightest thing in the forest, and the moon looks down at it and thinks, “Huh. Show-off.”'},
+  {id:'s-dragonfly',x:16,z:-52,title:'Why Dragonflies Hover',text:'Dragonflies can fly backward, sideways, and upside down. But mostly they hover. An old story says they’re waiting for someone. Not just anyone. One specific person. When that person walks by, the dragonfly follows, just to make sure they get home okay.'},
+  {id:'s-tree',x:44,z:-104,title:'The Tree That Fell Asleep',text:'The Sleeping Tree was awake once. It watched every sunrise for a thousand years and loved every single one. One morning it said, “I’ve seen enough beautiful things to dream about forever,” and closed its eyes. It’s smiling. Look closely. It’s still smiling.'}];
 const ISLES=[[19.5,-38,3.0,1.6],[22.4,-35.4,3.7,1.5],[25.8,-34.4,4.4,1.5],[29.2,-36.2,5.1,1.5],[29.4,-40.2,5.8,1.7]];
-const BOUNCE=[[15.2,-38.4,1.25],[-28,-34,1.6],[-40,-26,1.4],[-6,-60,1.3]];
+const BOUNCE=[[15.2,-38.4,1.25],[-30,-40,1.6],[-48,-24,1.4],[-14,-88,1.4],[20,-74,1.3]];
+// climbable spires: [id,x,z,radius,top]
+const SPIRES=[['look',6,-50,3,13],['shroom',-50,-48,1.4,10],['crystal',48,-82,2.6,11]];
 function wildsH(x,z){ const d=Math.hypot(x-26,z+38); return d<11?-(11-d)*.28:0; }
-const WISPS=[[-6,6],[8,-4],[-14,-6],[12,6],[-24,-20],[-40,-22],[-46,-38],[-30,-42],[-22,-34],[18,-30],[30,-30],[36,-44],[16,-48],[-16,-64],[0,-80],[-20,-80],[6,-66],[24,-96],[40,-84],[30,-100]];
+const WISPS=[[-6,6],[8,-4],[-14,-6],[12,6],[-24,-20],[-40,-22],[-46,-38],[-30,-46],[-22,-34],[18,-28],[34,-28],[38,-48],[14,-60],[-16,-66],[0,-86],[-22,-84],[8,-72],[26,-100],[46,-92],[34,-110]];
 const DAILY_W=[{id:'whales',name:'Sky whales',desc:'Sky whales are swimming over the Wilds tonight.'},{id:'flies',name:'Firefly bloom',desc:'The fireflies are blooming. They’ll follow you around.'},{id:'stars',name:'Starfall',desc:'Stars are falling in the meadow tonight. Catch one.'},{id:'lanterns',name:'Lantern night',desc:'The lanterns are rising off Lantern Lake.'}];
 const dailyWonder=()=>DAILY_W[Math.floor(Date.now()/864e5)%DAILY_W.length];
 let wilds=null;
 function buildWilds(){
   const scene=new THREE.Scene(); const prev=REGID; setRegion('wilds');
-  const env=makeEnv(scene,{top:'#1c1a4a',mid:'#5a4a8f',bottom:'#c48fb0',fog:'#4a3f78',fogN:40,fogF:150,sun:'#c9b8ff',sunI:1.1,hemiSky:'#8f86d8',hemiGround:'#3f3a5a',hemiI:.75,sunPos:[30,50,-40]});
-  const WSTRATA=['#5a5290','#6a5f9f','#4f4a80','#7a6aa8','#5f5a8a'];
-  makeTerrain(scene,{w:180,d:180,sx:100,sz:100,cx:0,cz:-52,H:CH,color:(x,y,z)=>{ const f=feat(x,z); if(f.s<-.4){ if(f.zone.id==='lake'&&Math.hypot(x-26,z+38)<11) return '#3f5f8f'; const k=(n2(x*.4+3,z*.4)+1)/2; return k>.68?f.zone.alt:f.zone.floor; } return WSTRATA[Math.floor((y+n2(x*.2,z*.2)*1.5)/2.6+20)%WSTRATA.length]; }});
+  const env=makeEnv(scene,{top:'#262a6e',mid:'#8a6ac9',bottom:'#ffb8d0',fog:'#7a68b0',fogN:90,fogF:340,sun:'#f0dcff',sunI:1.35,hemiSky:'#b8a8f0',hemiGround:'#5a4a7a',hemiI:.8,sunPos:[30,50,-40],moon:[-90,150,-330]});
+  env.sky.children.forEach(c=>{ if(c.isSprite) c.scale.multiplyScalar(2.4); });
+  const WSTRATA=['#9a86cc','#7f9cc4','#a88cc4','#7a9ea0','#b494c4'];
+  makeTerrain(scene,{w:340,d:340,sx:130,sz:130,cx:0,cz:-55,H:CH,color:(x,y,z)=>{ const f=feat(x,z); if(f.s<-.4){ if(f.zone.id==='lake'&&Math.hypot(x-26,z+38)<11) return '#3f5f8f'; const k=(n2(x*.4+3,z*.4)+1)/2; return k>.68?f.zone.alt:f.zone.floor; } return WSTRATA[Math.floor((y*1.3+n2(x*.1,z*.1)*2)/2+20)%WSTRATA.length]; }});
   const zg={}; for(const z of ZONES){ zg[z.id]=new THREE.Group(); scene.add(zg[z.id]); }
-  const rocks=[]; const rn=seeded(11); const glows=[]; const plats=[], water=[], vines=[], pearls=[];
+  const rocks=[]; const rn=seeded(11); const glows=[]; const plats=[], water=[], vines=[], pearls=[], anims=[];
   const glow=(x,y,z,tex,s,G)=>{ const g=glowSprite(tex,s,.7); g.position.set(x,y,z); g.userData.p=rn()*6; (G||scene).add(g); glows.push(g); return g; };
-  const stemM=flat('#e9e2f6'), capMs=[flat('#a693c9',{emissive:col('#3a2a6a')}),flat('#7fe0d6',{emissive:col('#1a5a50')}),flat('#f2b2c0',{emissive:col('#5a2a40')})];
+  const stemM=flat('#f4eefc'), capMs=[flat('#b9a6f0',{emissive:col('#4a3a8a')}),flat('#8ff0e0',{emissive:col('#1a6a60')}),flat('#ffb8d0',{emissive:col('#6a2a50')})];
   function shroom(x,zz,G,s){ const g=new THREE.Group(); g.position.set(x,CH(x,zz),zz); g.scale.setScalar(s); mesh(new THREE.CylinderGeometry(.25,.35,2,8),stemM,0,1,0,g); const c=mesh(new THREE.SphereGeometry(1.2,14,8,0,Math.PI*2,0,Math.PI/2),capMs[Math.floor(rn()*3)],0,1.9,0,g); c.scale.y=.6; for(let i=0;i<5;i++) mesh(new THREE.SphereGeometry(.12,6,4),flat('#fff6e9'),Math.cos(i*1.3)*.7,2.3,Math.sin(i*1.3)*.7,g); G.add(g); glow(x,CH(x,zz)+2*s,zz,TEX.teal,3*s,G); if(s>1.2) rocks.push({x,z:zz,r:.4*s,tree:true}); return g; }
-  const trunkM=flat('#5a4a6a'), leafMs=[flat('#5f8a8f'),flat('#6f7fb0'),flat('#7f6fa8')];
-  function tree(x,zz,G,s){ const g=new THREE.Group(); g.position.set(x,CH(x,zz),zz); g.scale.setScalar(s); mesh(new THREE.CylinderGeometry(.25,.4,2.6,6),trunkM,0,1.3,0,g); for(let k=0;k<4;k++) mesh(new THREE.IcosahedronGeometry(1.1+rn()*.6,0),leafMs[k%3],rn()*2-1,3+rn()*.8,rn()*2-1,g); G.add(g); rocks.push({x,z:zz,r:.5,tree:true}); }
-  function scatter(z,n,fn){ let made=0,tries=0; while(made<n&&tries++<n*40){ const a=rn()*Math.PI*2, d=Math.sqrt(rn())*(z.r+1), x=z.x+Math.cos(a)*d, zz=z.z+Math.sin(a)*d; const f=feat(x,zz); if(f.s>-1.5) continue; if(z.id==='lake'&&Math.hypot(x-26,zz+38)<12) continue; if(rocks.some(r=>Math.hypot(r.x-x,r.z-zz)<r.r+1.5)) continue; fn(x,zz); made++; } }
-  // rim forest
-  for(let i=0;i<320;i++){ const x=rand(-85,80), z=rand(-140,25); const f=feat(x,z); if(f.s<1||f.s>9) continue; const G=zg[f.zone.id]; if(rn()<.6) tree(x,z,G,1+rn()*.6); else shroom(x,z,G,1+rn()*.8); }
-  rocks.splice(0,rocks.length,...rocks.filter(r=>feat(r.x,r.z).s<0));
-  const flowerM=[flat('#7fe0d6',{emissive:col('#1a5a50')}),flat('#f2b2c0',{emissive:col('#5a2a40')}),flat('#fff6e9',{emissive:col('#5a5a5a')})];
+  // candy trees: stacked pastel cones
+  const candy=[['#ffb8d0','#ff9ac0'],['#9af0d8','#7fe0c8'],['#c9b0ff','#b09af0'],['#ffe0a0','#ffd080']], trunkM=flat('#8a6a9a');
+  function ctree(x,zz,G,s){ const g=new THREE.Group(); g.position.set(x,CH(x,zz),zz); g.scale.setScalar(s); const c=candy[Math.floor(rn()*candy.length)]; mesh(new THREE.CylinderGeometry(.2,.3,1.4,6),trunkM,0,.7,0,g); for(let k=0;k<3;k++) mesh(new THREE.ConeGeometry(1.5-k*.35,1.6,8),flat(c[k%2]),0,1.6+k*1.05,0,g); mesh(new THREE.SphereGeometry(.18,8,6),flat('#fff6e9',{emissive:col('#8a8a6a')}),0,4.5,0,g); G.add(g); rocks.push({x,z:zz,r:.45*s,tree:true}); }
+  // giant flowers
+  const petalMs=[flat('#ffb8d0'),flat('#c9b0ff'),flat('#9af0d8'),flat('#ffe0a0')];
+  function flower(x,zz,G,s){ const g=new THREE.Group(); g.position.set(x,CH(x,zz),zz); g.scale.setScalar(s); const h=2.4+rn()*1.6; const st=mesh(new THREE.CylinderGeometry(.08,.12,h,6),flat('#6fb08a'),0,h/2,0,g); const pm=petalMs[Math.floor(rn()*4)]; const head=new THREE.Group(); head.position.y=h; head.rotation.x=.35; g.add(head); for(let i=0;i<7;i++){ const a=i/7*6.28; const p=mesh(new THREE.SphereGeometry(.45,8,6),pm,Math.cos(a)*.5,0,Math.sin(a)*.5,head); p.scale.set(1,.25,.6); p.rotation.y=-a; } mesh(new THREE.SphereGeometry(.28,10,8),flat('#fff3a0',{emissive:col('#a89a2a')}),0,.08,0,head); G.add(g); glow(x,CH(x,zz)+h*s,zz,TEX.warm,1.6*s,G); }
+  function scatter(z,n,fn){ let made=0,tries=0; while(made<n&&tries++<n*40){ const a=rn()*Math.PI*2, d=Math.sqrt(rn())*(z.r+1), x=z.x+Math.cos(a)*d, zz=z.z+Math.sin(a)*d; const f=feat(x,zz); if(f.s>-2) continue; if(Math.hypot(x-26,zz+38)<13) continue; if(SPIRES.some(([,sx,sz,sr])=>Math.hypot(x-sx,zz-sz)<sr+3)) continue; if(rocks.some(r=>Math.hypot(r.x-x,r.z-zz)<r.r+2)) continue; fn(x,zz); made++; } }
+  // gentle hills around the edge: candy trees, shrooms and flowers
+  for(let i=0;i<420;i++){ const x=rand(-120,110), z=rand(-190,50); const f=feat(x,z); if(f.s<2||f.s>40) continue; const G=zg[f.zone.id]; const r=rn(); if(r<.55) ctree(x,z,G,1.1+rn()*.9); else if(r<.8) shroom(x,z,G,1.2+rn()*1.4); else flower(x,z,G,1.2+rn()); }
+  rocks.splice(0,rocks.length,...rocks.filter(r=>feat(r.x,r.z).s<2));
+  const flowerM=[flat('#7fe0d6',{emissive:col('#1a5a50')}),flat('#ffb8d0',{emissive:col('#5a2a40')}),flat('#fff6e9',{emissive:col('#5a5a5a')}),flat('#ffe0a0',{emissive:col('#5a4a10')})];
   for(const z of ZONES){ const G=zg[z.id];
-    scatter(z,Math.round(z.r*1.8),(x,zz)=>mesh(new THREE.IcosahedronGeometry(.13,0),flowerM[Math.floor(rn()*3)],x,CH(x,zz)+.2,zz,G));
-    if(z.id==='mush') scatter(z,14,(x,zz)=>shroom(x,zz,G,1+rn()*.8));
-    if(z.id==='gate'||z.id==='meadow') scatter(z,5,(x,zz)=>shroom(x,zz,G,.6+rn()*.5));
-    if(z.id==='tree'||z.id==='lake') scatter(z,5,(x,zz)=>tree(x,zz,G,1+rn()*.4));
-    if(z.id==='lake'){ const w=new THREE.Mesh(new THREE.CircleGeometry(11,32),new THREE.MeshStandardMaterial({color:col('#7fc8f5'),transparent:true,opacity:.8,roughness:.05,metalness:.2,emissive:col('#2a5aa8')})); w.rotation.x=-Math.PI/2; w.position.set(26,z.h+.1,-38); G.add(w); rocks.push({x:26,z:-38,r:10.5,tree:true,water:true});
-      for(const [x,zz,top,r] of ISLES){ const isl=new THREE.Group(); isl.position.set(x,top,zz); G.add(isl); const b=mesh(new THREE.ConeGeometry(r,r*1.5,7),flat('#6a5f8a'),0,-r*.75-.15,0,isl); b.rotation.x=Math.PI; mesh(new THREE.CylinderGeometry(r,r*.95,.3,7),flat('#7f9a6c'),0,-.15,0,isl); const lt=mesh(new THREE.BoxGeometry(.25,.4,.25),flat('#ffd27a',{emissive:col('#a8641a')}),r*.5,.2,-r*.4,isl); const g2=glowSprite(TEX.warm,1.4,.8); g2.position.set(r*.5,.45,-r*.4); isl.add(g2); plats.push({x,z:zz,r:r*.95,top,isle:isl}); } }
-    if(z.id==='lake'){ water.push({x:26,z:-38,r:10.6,y:.1}); }
-    if(z.id==='meadow'){ const cm=new THREE.MeshStandardMaterial({color:col('#d9c9ff'),emissive:col('#5a4a9a'),flatShading:true}); scatter(z,8,(x,zz)=>{ const c=mesh(new THREE.OctahedronGeometry(.5+rn()*.6),cm,x,CH(x,zz)+.6,zz,G); c.scale.y=1.8; c.rotation.set(rn()*.4,rn()*3,rn()*.4); glow(x,CH(x,zz)+1,zz,TEX.teal,2.2,G); }); }
-    if(z.id==='tree'){ const g=new THREE.Group(), tx=32, tz=-92; g.position.set(tx,CH(tx,tz),tz); G.add(g); mesh(new THREE.CylinderGeometry(1.6,2.6,9,8),trunkM,0,4.5,0,g); for(let k=0;k<9;k++) mesh(new THREE.IcosahedronGeometry(3+rn()*1.5,0),leafMs[k%3],Math.cos(k)*4,10+rn()*2.5,Math.sin(k)*4,g);
-      for(const sd of [-1,1]){ const lid=mesh(new THREE.BoxGeometry(.9,.12,.1),flat('#2b2230'),sd*.75,5.2,1.55,g); lid.rotation.z=sd*.15; } const mo=mesh(new THREE.TorusGeometry(.4,.07,6,12,Math.PI),flat('#2b2230'),0,4.2,1.6,g); mo.rotation.z=Math.PI; rocks.push({x:tx,z:tz,r:2.4,tree:true}); }
-    if(z.id==='edge'){ const g=new THREE.Group(); g.position.set(-6,CH(-6,-118),-118); G.add(g); for(const sd of [-1,1]) mesh(new THREE.BoxGeometry(.8,5,.8),flat('#4f4a70'),sd*3,2.5,0,g); mesh(new THREE.BoxGeometry(7,.6,.8),flat('#4f4a70'),0,5.2,0,g); for(let i=-2;i<=2;i++) mesh(new THREE.BoxGeometry(.18,4.4,.18),flat('#c9b8e8'),i*1.1,2.2,0,g); rocks.push({x:-6,z:-118,r:3.5,tree:true});
-      const sc=document.createElement('canvas'); sc.width=512; sc.height=160; const sg=sc.getContext('2d'); sg.fillStyle='#f6e7c8'; sg.fillRect(0,0,512,160); sg.fillStyle='#3a2c44'; sg.font='700 46px Georgia,serif'; sg.textAlign='center'; sg.fillText('Further out…',256,64); sg.font='600 32px Georgia,serif'; sg.fillText('opening soon',256,116); const st=new THREE.CanvasTexture(sc); st.encoding=THREE.sRGBEncoding; const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.4,.75),new THREE.MeshBasicMaterial({map:st,toneMapped:false})); sign.position.set(0,1.6,.6); g.add(sign); }
+    scatter(z,Math.round(z.r*2.2),(x,zz)=>mesh(new THREE.IcosahedronGeometry(.14,0),flowerM[Math.floor(rn()*4)],x,CH(x,zz)+.2,zz,G));
+    if(z.id==='mush') scatter(z,16,(x,zz)=>shroom(x,zz,G,1+rn()*.9));
+    if(z.id==='gate') { scatter(z,6,(x,zz)=>flower(x,zz,G,1+rn()*.5)); scatter(z,5,(x,zz)=>ctree(x,zz,G,1+rn()*.4)); }
+    if(z.id==='meadow') { scatter(z,14,(x,zz)=>flower(x,zz,G,1.1+rn()*.8)); scatter(z,4,(x,zz)=>shroom(x,zz,G,.7+rn()*.5)); }
+    if(z.id==='tree'||z.id==='lake') scatter(z,7,(x,zz)=>ctree(x,zz,G,1+rn()*.5));
+    if(z.id==='lake'){ const w=new THREE.Mesh(new THREE.CircleGeometry(11,32),new THREE.MeshStandardMaterial({color:col('#7fc8f5'),transparent:true,opacity:.8,roughness:.05,metalness:.2,emissive:col('#2a5aa8')})); w.rotation.x=-Math.PI/2; w.position.set(26,z.h+.1,-38); G.add(w); rocks.push({x:26,z:-38,r:10.5,tree:true,water:true}); water.push({x:26,z:-38,r:10.6,y:.1});
+      for(const [x,zz,top,r] of ISLES){ const isl=new THREE.Group(); isl.position.set(x,top,zz); G.add(isl); const b=mesh(new THREE.ConeGeometry(r,r*1.5,7),flat('#8a7ab0'),0,-r*.75-.15,0,isl); b.rotation.x=Math.PI; mesh(new THREE.CylinderGeometry(r,r*.95,.3,7),flat('#9ad0a0'),0,-.15,0,isl); mesh(new THREE.BoxGeometry(.25,.4,.25),flat('#ffd27a',{emissive:col('#a8641a')}),r*.5,.2,-r*.4,isl); const g2=glowSprite(TEX.warm,1.4,.8); g2.position.set(r*.5,.45,-r*.4); isl.add(g2); plats.push({x,z:zz,r:r*.95,top,isle:isl}); }
+      // the waterfall island
+      { const ix=34, iz=-47, iy=17; const isl=new THREE.Group(); isl.position.set(ix,iy,iz); scene.add(isl); const b=mesh(new THREE.ConeGeometry(5,8,8),flat('#8a7ab0'),0,-4.2,0,isl); b.rotation.x=Math.PI; mesh(new THREE.CylinderGeometry(5,4.8,.5,8),flat('#9ad0a0'),0,-.1,0,isl); for(let k=0;k<4;k++){ const t=new THREE.Group(); t.position.set(Math.cos(k*1.6)*2.6,0,Math.sin(k*1.6)*2.6); isl.add(t); const c=candy[k%4]; mesh(new THREE.CylinderGeometry(.2,.3,1.4,6),trunkM,0,.7,0,t); for(let j=0;j<3;j++) mesh(new THREE.ConeGeometry(1.4-j*.35,1.5,8),flat(c[j%2]),0,1.5+j,0,t); }
+        const wc=document.createElement('canvas'); wc.width=64; wc.height=256; const wg=wc.getContext('2d'); for(let i=0;i<40;i++){ wg.fillStyle='rgba(255,255,255,'+(.25+Math.random()*.5)+')'; wg.fillRect(Math.random()*64,Math.random()*256,2+Math.random()*4,20+Math.random()*60); } const wt=new THREE.CanvasTexture(wc); wt.wrapS=wt.wrapT=THREE.RepeatWrapping; wt.repeat.set(1,3);
+        const wf=new THREE.Mesh(new THREE.PlaneGeometry(2.6,iy),new THREE.MeshBasicMaterial({map:wt,color:col('#bfe8ff'),transparent:true,opacity:.85,side:THREE.DoubleSide,depthWrite:false})); wf.position.set(ix-3.2,iy/2,iz+2.6); wf.rotation.y=-.6; scene.add(wf); anims.push((dt)=>{ wt.offset.y+=dt*1.6; });
+        for(let i=0;i<5;i++) glow(ix-3.2+rand(-1,1),.6,iz+2.6+rand(-1,1),TEX.white,3); }
+    }
+    if(z.id==='meadow'){ const cm=new THREE.MeshStandardMaterial({color:col('#e9d9ff'),emissive:col('#6a5ab0'),flatShading:true}); scatter(z,8,(x,zz)=>{ const c=mesh(new THREE.OctahedronGeometry(.5+rn()*.6),cm,x,CH(x,zz)+.6,zz,G); c.scale.y=1.8; c.rotation.set(rn()*.4,rn()*3,rn()*.4); glow(x,CH(x,zz)+1,zz,TEX.teal,2.2,G); });
+      const rb=new THREE.Group(); rb.position.set(-6,CH(-6,-84),-84); rb.rotation.y=.3; G.add(rb); ['#ff9ab0','#ffc080','#fff0a0','#a8f0b0','#9ad8ff','#b8a8ff'].forEach((c,i)=>{ const t=new THREE.Mesh(new THREE.TorusGeometry(20-i*.6,.3,4,40,Math.PI),new THREE.MeshBasicMaterial({color:col(c),transparent:true,opacity:.35,depthWrite:false})); rb.add(t); }); }
+    if(z.id==='tree'){ const g=new THREE.Group(), tx=38, tz=-102; g.position.set(tx,CH(tx,tz),tz); G.add(g); mesh(new THREE.CylinderGeometry(1.8,2.8,10,8),trunkM,0,5,0,g); for(let k=0;k<11;k++) mesh(new THREE.IcosahedronGeometry(3+rn()*1.8,0),flat(['#ffb8d0','#c9b0ff','#9af0d8'][k%3]),Math.cos(k)*4.5,11+rn()*3,Math.sin(k)*4.5,g);
+      for(const sd of [-1,1]){ const lid=mesh(new THREE.BoxGeometry(.9,.12,.1),flat('#2b2230'),sd*.8,5.6,1.75,g); lid.rotation.z=sd*.15; } const mo=mesh(new THREE.TorusGeometry(.42,.07,6,12,Math.PI),flat('#2b2230'),0,4.5,1.8,g); mo.rotation.z=Math.PI; for(const sd of [-1,1]) mesh(new THREE.SphereGeometry(.35,8,6),flat('#ffb8c8'),sd*1.3,4.9,1.6,g); rocks.push({x:tx,z:tz,r:2.6,tree:true});
+      const zz=[0,1,2].map(i=>{ const c=document.createElement('canvas'); c.width=c.height=64; const g2=c.getContext('2d'); g2.font='bold 52px Georgia'; g2.fillStyle='#fff6e9'; g2.textAlign='center'; g2.fillText(i===1?'Z':'z',32,48); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false})); s.scale.set(1.2,1.2,1); scene.add(s); return s; });
+      anims.push((dt,T)=>zz.forEach((s,i)=>{ const k=(T*.4+i/3)%1; s.position.set(tx+2+k*2,CH(tx,tz)+6+k*4,tz+2); s.material.opacity=1-k; })); }
+    if(z.id==='edge'){ const g=new THREE.Group(); g.position.set(-8,CH(-8,-132),-132); G.add(g); for(const sd of [-1,1]) mesh(new THREE.BoxGeometry(.8,6,.8),flat('#8a7ab0'),sd*3.5,3,0,g); mesh(new THREE.TorusGeometry(3.5,.4,6,20,Math.PI),flat('#b9a6f0',{emissive:col('#3a2a6a')}),0,6,0,g); for(let i=-2;i<=2;i++) mesh(new THREE.BoxGeometry(.18,5.4,.18),flat('#e9d9ff'),i*1.3,2.7,0,g); rocks.push({x:-8,z:-132,r:4,tree:true});
+      const sc=document.createElement('canvas'); sc.width=512; sc.height=160; const sg=sc.getContext('2d'); sg.fillStyle='#f6e7c8'; sg.fillRect(0,0,512,160); sg.fillStyle='#3a2c44'; sg.font='700 46px Georgia,serif'; sg.textAlign='center'; sg.fillText('Further out…',256,64); sg.font='600 32px Georgia,serif'; sg.fillText('opening soon',256,116); const st=new THREE.CanvasTexture(sc); st.encoding=THREE.sRGBEncoding; const sign=new THREE.Mesh(new THREE.PlaneGeometry(2.4,.75),new THREE.MeshBasicMaterial({map:st,toneMapped:false})); sign.position.set(0,1.6,.6); g.add(sign);
+      for(let i=0;i<8;i++) glow(-8+rand(-40,40),CH(-8,-170)+rand(4,14),-170-rand(0,30),TEX.warm,4); }
   }
-  // bounce mushrooms: jump on the cap to launch high
+  // bounce mushrooms
   for(const [x,zz,s] of BOUNCE){ const g=new THREE.Group(); g.position.set(x,CH(x,zz),zz); g.scale.setScalar(s); scene.add(g); mesh(new THREE.CylinderGeometry(.3,.4,1.2,8),stemM,0,.6,0,g); const cap=mesh(new THREE.SphereGeometry(1.1,16,8,0,Math.PI*2,0,Math.PI/2),flat('#f2c14e',{emissive:col('#7a4a08')}),0,1.15,0,g); cap.scale.y=.55; for(let i=0;i<6;i++) mesh(new THREE.SphereGeometry(.13,6,4),flat('#fff6e9'),Math.cos(i)*.65,1.6,Math.sin(i)*.65,g); glow(x,CH(x,zz)+1.6*s,zz,TEX.warm,2.6*s);
     plats.push({x,z:zz,r:1.05*s,top:CH(x,zz)+1.62*s,bounce:17,cap,g}); rocks.push({x,z:zz,r:.4*s,tree:true,top:CH(x,zz)+1.2*s}); }
-  // vine walls with a ledge on top
-  function vine(zid,ang){ const Z=ZB[zid]; let d=Z.r*.5, x, zz; for(;d<Z.r+20;d+=.25){ x=Z.x+Math.cos(ang)*d; zz=Z.z+Math.sin(ang)*d; if(feat(x,zz).s>-.45) break; }
-    const ux=Math.cos(ang), uz=Math.sin(ang); const lx=x+ux*2.3, lz=zz+uz*2.3; const top=Math.max(CH(x,zz)+3.5,CH(x+ux*3.2,zz+uz*3.2)+.2);
-    const g=new THREE.Group(); g.position.set(x+ux*.35,CH(x,zz),zz+uz*.35); g.rotation.y=Math.atan2(-ux,-uz); scene.add(g); const h=top-CH(x,zz);
-    const vm=flat('#4f8a5f'), fm=flat('#7fe0d6',{emissive:col('#1a6a60')}); for(let i=0;i<3;i++) mesh(new THREE.BoxGeometry(.12,h,.12),vm,-.5+i*.5,h/2,0,g); for(let i=0;i<22;i++){ const lf=mesh(new THREE.IcosahedronGeometry(.18,0),i%3?vm:fm,rand(-.7,.7),rand(.2,h),.05,g); lf.scale.z=.4; }
-    const gl=glowSprite(TEX.teal,2,.6); gl.position.set(0,h*.5,.3); g.add(gl); glows.push(gl);
-    const ld=mesh(new THREE.CylinderGeometry(1.9,1.6,.4,10),flat('#6a5f8a'),lx,top-.2,lz,scene); mesh(new THREE.CylinderGeometry(1.85,1.85,.08,10),flat('#7f9a6c'),lx,top+.02,lz,scene);
-    plats.push({x:lx,z:lz,r:1.8,top:top+.05,ledge:true}); vines.push({x,z:zz,ux,uz,top:top+.05,lx,lz}); return {x:lx,z:lz,top:top+.05}; }
-  const L1=vine('mush',Math.PI*1.05), L2=vine('tree',-.2);
-  pearls.push({id:'p-isle',x:29.4,z:-40.2,y:5.85},{id:'p-mush',x:L1.x,z:L1.z,y:L1.top},{id:'p-tree',x:L2.x,z:L2.z,y:L2.top});
+  // climbable spires, each with a glowing vine on the side facing camp
+  const vm=flat('#5fa87a'), fm=flat('#8ff0e0',{emissive:col('#1a6a60')});
+  for(const [id,sx,sz,sr,top] of SPIRES){ const gy=CH(sx,sz), h=top-gy, a=Math.atan2(-20-sz,0-sx), ux=-Math.cos(a), uz=-Math.sin(a);
+    const g=new THREE.Group(); g.position.set(sx,gy,sz); scene.add(g);
+    if(id==='look'){ for(let k=0;k<4;k++) mesh(new THREE.CylinderGeometry(sr*(1-k*.06)-.1,sr*(1-k*.06),h/4,10),flat(['#b8a8e0','#a898d0'][k%2]),0,h/8+k*h/4,0,g); mesh(new THREE.CylinderGeometry(sr+.4,sr,.4,10),flat('#9ad0a0'),0,h,0,g);
+      const tel=new THREE.Group(); tel.position.set(.6,h+.2,0); g.add(tel); mesh(new THREE.CylinderGeometry(.06,.06,1,5),toon('#7a4d33'),0,.5,0,tel); const tb=mesh(new THREE.CylinderGeometry(.14,.2,1.2,10),toon('#e8a01f'),0,1.1,.2,tel); tb.rotation.x=1.1; mesh(new THREE.ConeGeometry(.5,.6,10),flat('#ffb8d0'),-.6,h+1.4,0,g).rotation.z=.1; }
+    if(id==='shroom'){ mesh(new THREE.CylinderGeometry(sr,sr*1.3,h,10),stemM,0,h/2,0,g); const cap=mesh(new THREE.SphereGeometry(4.6,18,10,0,Math.PI*2,0,Math.PI/2),flat('#b9a6f0',{emissive:col('#4a3a8a')}),0,h-.4,0,g); cap.scale.y=.35; for(let i=0;i<9;i++) mesh(new THREE.SphereGeometry(.3,8,6),flat('#fff6e9'),Math.cos(i*.7)*3,h+.9,Math.sin(i*.7)*3,g); glow(sx,top+1,sz,TEX.teal,8); }
+    if(id==='crystal'){ const cm=new THREE.MeshStandardMaterial({color:col('#e9d9ff'),emissive:col('#5a4ab0'),flatShading:true}); mesh(new THREE.CylinderGeometry(sr,sr*1.2,h,6),cm,0,h/2,0,g); for(let i=0;i<5;i++){ const c=mesh(new THREE.OctahedronGeometry(.8+rn()*.6),cm,Math.cos(i*1.3)*sr,h*.3+rn()*h*.5,Math.sin(i*1.3)*sr,g); c.scale.y=2; } glow(sx,top,sz,TEX.teal,7); }
+    const vx=sx+Math.cos(a)*(sr+.2), vz=sz+Math.sin(a)*(sr+.2); const vg=new THREE.Group(); vg.position.set(vx,CH(vx,vz),vz); vg.rotation.y=Math.atan2(-ux,-uz); scene.add(vg); const vh=top-CH(vx,vz);
+    for(let i=0;i<3;i++) mesh(new THREE.BoxGeometry(.12,vh,.12),vm,-.5+i*.5,vh/2,0,vg); for(let i=0;i<Math.round(vh*3);i++){ const lf=mesh(new THREE.IcosahedronGeometry(.18,0),i%3?vm:fm,rand(-.7,.7),rand(.2,vh),.05,vg); lf.scale.z=.4; } const vgl=glowSprite(TEX.teal,2.2,.6); vgl.position.set(0,1.5,.3); vg.add(vgl); glows.push(vgl);
+    plats.push({x:sx,z:sz,r:(id==='shroom'?4.2:sr+.2),top:top+.05,ledge:true}); rocks.push({x:sx,z:sz,r:sr+.1,tree:true,top:top-.2}); vines.push({x:vx,z:vz,ux,uz,top:top+.05,lx:sx+Math.cos(a)*Math.min(1.2,sr*.5),lz:sz+Math.sin(a)*Math.min(1.2,sr*.5)}); }
+  pearls.push({id:'p-isle',x:29.4,z:-40.2,y:5.85},{id:'p-mush',x:-50,z:-46.5,y:10.05},{id:'p-tree',x:48,z:-82,y:11.05});
   // the gate you came through
-  { const g=new THREE.Group(); g.position.set(0,CH(0,9),9); scene.add(g); const ar=mesh(new THREE.TorusGeometry(3,.45,8,24,Math.PI),flat('#d9c9ff',{emissive:col('#4a3a8a')}),0,2.6,0,g); for(const sd of [-1,1]) mesh(new THREE.CylinderGeometry(.45,.55,2.6,8),flat('#c9b8e8'),sd*3,1.3,0,g); const pt=new THREE.Mesh(new THREE.CircleGeometry(2.6,24,0,Math.PI),new THREE.MeshBasicMaterial({color:col('#ffd9a8'),transparent:true,opacity:.55,side:THREE.DoubleSide})); pt.position.y=2.6; g.add(pt); const pb=new THREE.Mesh(new THREE.PlaneGeometry(5.2,2.6),pt.material); pb.position.y=1.3; g.add(pb); glow(0,CH(0,9)+3,9,TEX.warm,7); }
+  { const g=new THREE.Group(); g.position.set(0,CH(0,9),9); scene.add(g); mesh(new THREE.TorusGeometry(3,.45,8,24,Math.PI),flat('#d9c9ff',{emissive:col('#4a3a8a')}),0,2.6,0,g); for(const sd of [-1,1]) mesh(new THREE.CylinderGeometry(.45,.55,2.6,8),flat('#c9b8e8'),sd*3,1.3,0,g); const pt=new THREE.Mesh(new THREE.CircleGeometry(2.6,24,0,Math.PI),new THREE.MeshBasicMaterial({color:col('#ffd9a8'),transparent:true,opacity:.55,side:THREE.DoubleSide})); pt.position.y=2.6; g.add(pt); const pb=new THREE.Mesh(new THREE.PlaneGeometry(5.2,2.6),pt.material); pb.position.y=1.3; g.add(pb); glow(0,CH(0,9)+3,9,TEX.warm,7); }
+  // the faraway world: floating mountains and islands on the horizon
+  for(let i=0;i<14;i++){ const a=i/14*6.28+rn()*.3, r=150+rn()*70, x=Math.cos(a)*r, zz=-55+Math.sin(a)*r, y=25+rn()*55, s=5+rn()*9; const isl=new THREE.Group(); isl.position.set(x,y,zz); isl.scale.setScalar(s); scene.add(isl); const b=mesh(new THREE.ConeGeometry(1,2.2,7),flat(['#8a7ab0','#9a8ac0','#7a6aa8'][i%3]),0,-1.15,0,isl); b.rotation.x=Math.PI; mesh(new THREE.CylinderGeometry(1,.95,.15,7),flat('#9ad0a0'),0,0,0,isl); for(let k=0;k<3;k++){ const c=candy[(i+k)%4]; mesh(new THREE.ConeGeometry(.3,.7,6),flat(c[0]),Math.cos(k*2)*.5,.4,Math.sin(k*2)*.5,isl); } anims.push((dt,T)=>{ isl.position.y=y+Math.sin(T*.3+i)*1.5; }); }
+  for(let i=0;i<10;i++){ const a=i/10*6.28+.2, r=250+rn()*40; const m=mesh(new THREE.ConeGeometry(30+rn()*25,60+rn()*60,7),flat(['#6a5aa0','#7a6ab0','#5a4a90'][i%3],{emissive:col('#1a1440')}),Math.cos(a)*r,10,-55+Math.sin(a)*r,scene); m.material.fog=false; mesh(new THREE.ConeGeometry(10,14,7),flat('#e9e2ff'),m.position.x,m.position.y+m.geometry.parameters.height/2-6,m.position.z,scene).material.fog=false; }
+  // aurora ribbons
+  { const am=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,fog:false,blending:THREE.AdditiveBlending,uniforms:{t:{value:0}},vertexShader:'varying vec2 vU; void main(){ vU=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',fragmentShader:'uniform float t; varying vec2 vU; void main(){ float w=sin(vU.x*12.0+t*.6)*.5+.5; float b=smoothstep(0.,.4,vU.y)*smoothstep(1.,.5,vU.y); vec3 c=mix(vec3(.3,1.,.75),vec3(.75,.45,1.),w); gl_FragColor=vec4(c,b*.35*(.6+.4*sin(vU.x*5.0-t*.4))); }'});
+    for(let i=0;i<2;i++){ const g=new THREE.PlaneGeometry(260,40,40,1); const p=g.attributes.position; for(let k=0;k<p.count;k++){ const x=p.getX(k); p.setZ(k,Math.sin(x*.03+i)*30); } const m=new THREE.Mesh(g,am); m.position.set(-20+i*30,95+i*15,-230+i*20); m.rotation.x=.25; scene.add(m); } anims.push((dt,T)=>{ am.uniforms.t.value=T; }); }
   // sky stars
-  { const pts=[]; for(let i=0;i<500;i++){ const a=rn()*6.28, e=.15+rn()*1.3, r=420; pts.push(Math.cos(a)*Math.cos(e)*r,Math.sin(e)*r,Math.sin(a)*Math.cos(e)*r); } const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3)); const st=new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:2,sizeAttenuation:false,fog:false})); scene.add(st); env.sky.add(st); }
-  // fireflies everywhere
-  for(let i=0;i<70;i++){ const x=rand(-60,60), z=rand(-120,15); if(feat(x,z).s>-1) continue; glow(x,CH(x,z)+rand(1,4),z,i%2?TEX.teal:TEX.warm,.6); }
+  { const pts=[]; for(let i=0;i<600;i++){ const a=rn()*6.28, e=.15+rn()*1.3, r=420; pts.push(Math.cos(a)*Math.cos(e)*r,Math.sin(e)*r,Math.sin(a)*Math.cos(e)*r); } const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pts,3)); const st=new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:2,sizeAttenuation:false,fog:false})); env.sky.add(st); }
+  for(let i=0;i<90;i++){ const x=rand(-70,70), z=rand(-130,20); if(feat(x,z).s>-1) continue; glow(x,CH(x,z)+rand(1,5),z,i%2?TEX.teal:TEX.warm,.6); }
   // daily wonder props
   const daily=dailyWonder(); const dobj={kind:daily.id,list:[]};
-  if(daily.id==='whales'){ const wm=flat('#8fa6d8',{emissive:col('#2a3a6a')}); for(let i=0;i<3;i++){ const w=new THREE.Group(); const b=mesh(new THREE.SphereGeometry(4,12,8),wm,0,0,0,w); b.scale.set(1,.7,2.2); const t=mesh(new THREE.ConeGeometry(2.5,3,4),wm,0,0,-9.5,w); t.rotation.x=-Math.PI/2; t.scale.set(1.6,.3,1); for(const sd of [-1,1]){ const f=mesh(new THREE.BoxGeometry(5,.3,2),wm,sd*4,-1,1,w); f.rotation.z=sd*.4; } scene.add(w); dobj.list.push({g:w,a:i*2.1,r:50+i*12,y:34+i*6,sp:.05+i*.015}); } }
+  if(daily.id==='whales'){ const wm=flat('#a8c0f0',{emissive:col('#2a3a6a')}); for(let i=0;i<3;i++){ const w=new THREE.Group(); const b=mesh(new THREE.SphereGeometry(4,12,8),wm,0,0,0,w); b.scale.set(1,.7,2.2); const t=mesh(new THREE.ConeGeometry(2.5,3,4),wm,0,0,-9.5,w); t.rotation.x=-Math.PI/2; t.scale.set(1.6,.3,1); for(const sd of [-1,1]){ const f=mesh(new THREE.BoxGeometry(5,.3,2),wm,sd*4,-1,1,w); f.rotation.z=sd*.4; } scene.add(w); dobj.list.push({g:w,a:i*2.1,r:50+i*12,y:34+i*6,sp:.05+i*.015}); } }
   if(daily.id==='lanterns'){ for(let i=0;i<30;i++){ const l=new THREE.Group(); mesh(new THREE.BoxGeometry(.4,.55,.4),flat('#ffd27a',{emissive:col('#c9781a')}),0,0,0,l); const g2=glowSprite(TEX.warm,1.8,.8); l.add(g2); const x=26+rand(-10,10), zz=-38+rand(-10,10); l.position.set(x,rand(1,30),zz); scene.add(l); dobj.list.push({g:l,x,z:zz,sp:rand(.8,1.6)}); } }
   setRegion(prev);
-  return {scene,env,zg,rocks,poiLabels:[],hard:[],glows,daily:dobj,plats,water,vines,pearls};
+  return {scene,env,zg,rocks,poiLabels:[],hard:[],glows,daily:dobj,plats,water,vines,pearls,anims};
 }
 
 /* =============== CAMP =============== */
@@ -1355,9 +1380,9 @@ function vertical(dt,inp){ const pl=world.plats||[], wa=world.water||[], vi=worl
   const floor=wat?Math.max(surf,wat.y-.55):surf;
   if(P.y==null){ P.y=floor; P.air=false; }
   // climbing a vine wall
-  if(!P.climb&&!P.swim&&mode==='hunt'){ for(const v of vi){ if(Math.hypot(P.x-v.x,P.z-v.z)<1.4&&inp.m>.2&&inp.x*v.ux+inp.z*v.uz>.45&&P.y<v.top-.5){ P.climb=v; P.air=false; P.glide=false; if(!S.flags.climbTip){ S.flags.climbTip=1; callout('Climbing! Keep pushing toward the vines.',3); } break; } } }
+  if(!P.climb&&!P.swim&&mode==='hunt'){ for(const v of vi){ if(Math.hypot(P.x-v.x,P.z-v.z)<1.6&&inp.m>.2&&inp.x*v.ux+inp.z*v.uz>.1&&P.y<v.top-.5){ P.climb=v; P.air=false; P.glide=false; if(!S.flags.climbTip2){ S.flags.climbTip2=1; callout('Climbing! Hold any direction to keep going up. Pull away or Jump to let go.',3.5); } break; } } }
   if(P.climb){ const v=P.climb; P.x=lerp(P.x,v.x-v.ux*.15,dt*10); P.z=lerp(P.z,v.z-v.uz*.15,dt*10); P.ang=Math.atan2(v.ux,v.uz); const push=inp.x*v.ux+inp.z*v.uz;
-    if(push>.2){ P.y+=3.6*dt; P.t+=dt; } if(jumpQ||push<-.4){ P.climb=null; P.air=true; P.vy=jumpQ?6:0; P.x-=v.ux*.9; P.z-=v.uz*.9; jumpQ=false; return; }
+    if(inp.m>.2&&push>-.5){ P.y+=4.2*dt; P.t+=dt; } if(jumpQ||push<-.5){ P.climb=null; P.air=true; P.vy=jumpQ?6:0; P.x-=v.ux*.9; P.z-=v.uz*.9; jumpQ=false; return; }
     if(P.y>=v.top-.15){ P.climb=null; P.x=v.lx; P.z=v.lz; P.y=v.top; P.air=false; P.plat=null; SND.pop(); say('Made it!',1.6); } jumpQ=false; return; }
   const wasSwim=P.swim; P.swim=!!wat&&P.y<=wat.y-.3; if(P.swim&&!wasSwim){ dust(P.x,P.z,8,3); SND.whoosh(); if(!S.flags.swimTip){ S.flags.swimTip=1; callout('Swimming! It uses stamina, so head for shore if you get tired.',3.5); } }
   if(P.swim){ P.st=Math.max(0,P.st-14*dt); if(P.st<=0&&Math.random()<dt) say('So… tired… swim…',1.4); if(Math.random()<dt*4) puff(P.x+rand(-.5,.5),wat.y+.05,P.z+rand(-.5,.5),TEX.white,.25,0,.4,0,.6,0); }
@@ -1554,7 +1579,7 @@ function startWilds(){ closeSheet(); if(!S.wilds) S.wilds={wisps:{},stones:{},da
     [[22.4,-35.4,3.7],[29.2,-36.2,5.1]].forEach(([x,z,y],i)=>{ const id=20+i; if(!W.wisps[id]) addI({kind:'wisp',id,x,z,yy:y,r:1.8,act:'Catch',build:()=>{ const g=new THREE.Group(); const o=mesh(new THREE.OctahedronGeometry(.18),flat('#e9fff8',{emissive:col('#7fe0d6')}),0,1.1,0,g); const s=glowSprite(TEX.teal,1.6,.8); s.position.y=1.1; g.add(s); g.userData.glow=s; g.userData.o=o; return g; }}); });
     WISPS.forEach(([x,z],i)=>{ if(W.wisps[i]) return; addI({kind:'wisp',id:i,x,z,r:1.8,act:'Catch',build:()=>{ const g=new THREE.Group(); const o=mesh(new THREE.OctahedronGeometry(.18),flat('#e9fff8',{emissive:col('#7fe0d6')}),0,1.1,0,g); const s=glowSprite(TEX.teal,1.6,.8); s.position.y=1.1; g.add(s); g.userData.glow=s; g.userData.o=o; return g; }}); });
     for(const st of STONES) addI({kind:'stone',id:st.id,x:st.x,z:st.z,r:2.4,act:'Read',build:()=>{ const g=new THREE.Group(); const m=mesh(new THREE.DodecahedronGeometry(.8,0),flat('#8a7fb0'),0,.6,0,g); m.scale.set(.8,1.3,.5); const r=mesh(new THREE.TorusGeometry(.35,.05,6,16),flat('#7fe0d6',{emissive:col('#1a5a50')}),0,.75,.42,g); const s=glowSprite(TEX.teal,2,(W.stones[st.id]?.25:.7)); s.position.y=.8; g.add(s); g.userData.glow=s; return g; }});
-    for(const L of WONDERS) addI({kind:'wonder',id:L.id,x:L.x,z:L.z,r:2.4,act:'Look',build:()=>{ const g=new THREE.Group(); mesh(new THREE.CylinderGeometry(.06,.06,1.2,5),toon('#c9b8e8'),0,.6,0,g); const st=mesh(new THREE.OctahedronGeometry(.25),flat('#ffd27a',{emissive:col('#a8641a')}),0,1.35,0,g); const s=glowSprite(TEX.warm,2,.7); s.position.y=1.3; g.add(s); g.userData.glow=s; g.userData.o=st; return g; }});
+    for(const L of WONDERS) addI({kind:'wonder',id:L.id,x:L.x,z:L.z,yy:L.y,r:2.4,act:'Look',build:()=>{ const g=new THREE.Group(); mesh(new THREE.CylinderGeometry(.06,.06,1.2,5),toon('#c9b8e8'),0,.6,0,g); const st=mesh(new THREE.OctahedronGeometry(.25),flat('#ffd27a',{emissive:col('#a8641a')}),0,1.35,0,g); const s=glowSprite(TEX.warm,2,.7); s.position.y=1.3; g.add(s); g.userData.glow=s; g.userData.o=st; return g; }});
     const dw=dailyWonder(), dk=new Date().toDateString(), dpos={whales:[6,-10],flies:[-30,-36],stars:[-10,-76],lanterns:[16,-50]}[dw.id];
     if(!W.daily[dk]) addI({kind:'daily',x:dpos[0],z:dpos[1],r:2.4,act:dw.id==='stars'?'Catch the star':dw.id==='whales'?'Wave':'Make a wish',build:()=>{ const g=new THREE.Group(); const o=mesh(new THREE.IcosahedronGeometry(.35,0),flat('#fff3c4',{emissive:col('#c9a01a')}),0,1.4,0,g); const s=glowSprite(TEX.warm,3.2,.9); s.position.y=1.4; g.add(s); g.userData.glow=s; g.userData.o=o; const b=bang(); b.position.y=2.4; g.add(b); return g; }});
     addI({kind:'exit',x:0,z:8,r:2.6,act:'Go home'});
@@ -1579,7 +1604,7 @@ function wildsInteract(it){ const W=S.wilds;
   if(it.kind==='pearl'){ it.done=true; W.pearls[it.id]=1; fadeOut(it); S.mats.core=(S.mats.core||0)+1; S.mats.sungem=(S.mats.sungem||0)+1; save(); SND.fanfare(); const n=Object.keys(W.pearls).length; callout('A {i:Moon Pearl}! ('+n+' of 3) It hums when you hold it. +1 Moon Core, +1 Sun Gem.'+(n===3?' All three… the {p:Far Gate} is humming back.':''),5); say('Pretty.',2); return true; }
   if(it.kind==='dig'){ it.done=true; fadeOut(it); const p=wildPets[0]; const m=pick(['core','horn','sungem','fang','glass','ore']); S.mats[m]=(S.mats[m]||0)+1; W.digs=(W.digs||0)+1; save(); SND.collect(); callout('Your {n:'+(p&&p.id==='babyWyrm'?'Baby Dune Wyrm':'Baby Tumblebrute')+'} dug up {i:'+MATS[m]+'}!',4); return true; }
   return false; }
-function updateWilds(dt,T){ if(!world.daily) return;
+function updateWilds(dt,T){ if(!world.daily) return; if(world.anims) world.anims.forEach(f=>f(dt,T));
   const W=world, D=W.daily; if(D.kind==='whales') D.list.forEach(w=>{ w.a+=w.sp*dt; w.g.position.set(-4+Math.cos(w.a)*w.r,w.y+Math.sin(T*.5+w.r)*2,-50+Math.sin(w.a)*w.r); w.g.rotation.y=-w.a; });
   if(D.kind==='lanterns') D.list.forEach(l=>{ l.g.position.y+=l.sp*dt; if(l.g.position.y>40) l.g.position.y=1; l.g.position.x=l.x+Math.sin(T*.5+l.z)*.8; });
   if(D.kind==='stars'&&Math.random()<dt*2){ const x=-8+rand(-18,18), z=-72+rand(-18,18); puff(x,CH(x,z)+22,z,TEX.warm,.6,rand(-2,2),-24,rand(-2,2),.9,0); }
@@ -1857,7 +1882,7 @@ function frame(now){ const rdt=Math.min(.05,(now-last)/1000); last=now; T+=rdt; 
   else if(dressMode){ const gy=groundH(P.x,P.z), arm=dressKind==='arm', d=arm?(camera.aspect<1?4.4:3.9):(camera.aspect<1?4.6:5.4); camPos.set(P.x+Math.sin(dressCam)*d,gy+(arm?1.25:1.55),P.z+Math.cos(dressCam)*d); camera.position.lerp(camPos,Math.min(1,rdt*5)); if(arm){ fox.sword.getWorldPosition(tmpV); tmpV.x=(tmpV.x+P.x)/2; tmpV.z=(tmpV.z+P.z)/2; tmpV.y=gy+(camera.aspect<1?.2:.75); } else tmpV.set(P.x,gy+(camera.aspect<1?.15:.55),P.z); camLook.lerp(tmpV,Math.min(1,rdt*6)); if(!dressDrag) P.ang=angLerp(P.ang,dressCam+Math.sin(T*.6)*.35,rdt*1.5); }
   else if(decoMode){ camPos.set(0,15,GRID.z0+GRID.nz*GRID.cell/2+7); camera.position.lerp(camPos,Math.min(1,rdt*4)); camLook.lerp(tmpV.set(0,0,GRID.z0+GRID.nz*GRID.cell/2),Math.min(1,rdt*5)); }
   else { let lx=P.x, lz=P.z-1.2; if(mode==='hunt'&&B&&!['dead','captured','roam','retreat','sleep'].includes(B.state)){ const d=Math.hypot(B.x-P.x,B.z-P.z); if(d<26){ lx=lerp(P.x,B.x,.3); lz=lerp(P.z,B.z,.3); } }
-    camPos.set(lx, py+camDist*.82, lz+camDist); camera.position.lerp(camPos,Math.min(1,rdt*4)); camLook.lerp(tmpV.set(lx,py+1.1,lz),Math.min(1,rdt*6)); }
+    const pit=hunt&&hunt.variant==='wilds'&&mode==='hunt'?.52:.82; camPos.set(lx, py+camDist*pit, lz+camDist); camera.position.lerp(camPos,Math.min(1,rdt*4)); camLook.lerp(tmpV.set(lx,py+1.1,lz),Math.min(1,rdt*6)); }
   if(shake>0&&!reduced){ camera.position.x+=rand(-1,1)*shake*.5; camera.position.y+=rand(-1,1)*shake*.5; }
   camera.lookAt(camLook);
   world.env.sun.position.copy(camLook).add(world.env.sunOff); world.env.sun.target.position.copy(camLook); world.env.sky.position.copy(camera.position);
