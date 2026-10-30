@@ -1,4 +1,5 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta property="og:type" content="website"><meta property="og:url" content="https://new-daytime.github.io/little-fox-stories/"><meta property="og:title" content="Little Fox Stories"><meta property="og:description" content="A canyon adventure made just for you. Hunt, explore, and win real rewards."><meta property="og:image" content="https://new-daytime.github.io/little-fox-stories/art/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://new-daytime.github.io/little-fox-stories/art/og.jpg"><meta name="description" content="A canyon adventure made just for you.">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
 <title>Little Fox Stories</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -464,7 +465,8 @@ footer{color:#fff1e2;font:400 22px/1.2 var(--hand);text-align:center;}
    CONFIG — edit prices, rewards and pacing here
    ========================================================= */
 const SALT='friendship7-moon-16';
-const NOTIFY_URL=''; // add an n8n webhook here when the game is hosted on your own domain: claims will POST {name,reward,code,source,time}
+const NOTIFY_TOPIC='foxpost-wqpqw9tk47aqy1'; // ntfy.sh topic. Subscribe to it in the ntfy app to get claim alerts.
+const NOTIFY_URL=/github\.io$/.test(location.hostname)?'https://ntfy.sh/':''; // only on the hosted site
 const REWARD_TYPES=[ // index is baked into claim codes; only append, never reorder
   {id:'sb5',kind:'sb',amt:5},{id:'sb10',kind:'sb',amt:10},{id:'sb15',kind:'sb',amt:15},
   {id:'ap20',kind:'ap',amt:20},{id:'ap50',kind:'ap',amt:50},{id:'ap100',kind:'ap',amt:100},{id:'moon',kind:'moon',amt:1000},
@@ -591,8 +593,8 @@ function bigOnly(rid){ const r=R(rid); return r.kind==='ap'&&r.amt>DAILY.ap&&!bi
 function canClaimToday(rid){ const r=R(rid); if(r.kind==='moon') return true; return claimedToday(r.kind)+r.amt<=capFor(r.kind); }
 function claim(rid,source){ const code=makeCode(rid); const c={code,r:rid,source,t:Date.now(),sent:false}; p.claims.unshift(c); save(); notify(c); return code; }
 function notify(c){ if(!NOTIFY_URL) return; c.sending=true;
-  fetch(NOTIFY_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:p.name,reward:rLabel(R(c.r)),code:c.code,source:c.source,time:new Date(c.t).toISOString()}),keepalive:true})
-    .then(r=>{ if(!r.ok) throw 0; c.sent=true; c.auto=true; }).catch(()=>{}).finally(()=>{ c.sending=false; save(); renderAll(); const st=$('sendState'); if(st) st.innerHTML=c.sent?'<span class="tag gold">Sent to Friendship 7 ✓</span>':''; }); }
+  fetch(NOTIFY_URL,{method:'POST',body:JSON.stringify({topic:NOTIFY_TOPIC,title:(p.name||'Little Fox')+' claimed a reward!',message:rLabel(R(c.r))+'\nCode: '+c.code+'\nFrom: '+c.source,tags:['fox_face','moneybag'],priority:5,click:'https://claude.ai/code/artifact/2v1XPExEuN2RUPbuPZUu2P'}),keepalive:true})
+    .then(r=>{ if(!r.ok) throw 0; c.sent=true; c.auto=true; }).catch(()=>{ c.failed=true; }).finally(()=>{ c.sending=false; save(); renderAll(); const st=$('sendState'); if(st) st.innerHTML=c.sent?'<span class="tag gold">Sent to Friendship 7 ✓</span>':'<p class="small-note">Couldn’t send it automatically. No worries: copy the message and text it to Friendship 7.</p><button class="gold" data-copymsg="'+esc(c.code)+'">Copy message</button>'; }); }
 
 /* ---------- render ---------- */
 function shardCount(){ return SHARDS.filter(s=>s.test(p)).length; }
@@ -717,7 +719,7 @@ function askName(first,then){
 const TOUR=[
   {t:'Welcome, {name}!',b:'This is your camp. I’m the dragonfly, and I’ll always point you to what’s next.'},
   {t:'Every play pays',b:'Sidequests and hunts earn Fox Coins and XP. First finishes pay the most, and replays still count.'},
-  {t:'The Gift Shop is real',b:'Spend coins on real Starbucks cards and Apple Pay cash. Some rewards you win free just by hitting milestones. You can claim a little every day. When you claim one, the dragonfly writes a little text for you. Just copy it and send it to Friendship 7. He’ll pay up.'},
+  {t:'The Gift Shop is real',b:'Spend coins on real Starbucks cards and Apple Pay cash. Some rewards you win free just by hitting milestones. You can claim a little every day. Tap Claim and it goes straight to Friendship 7. He’ll pay up.'},
   {t:'16 Moon Shards',b:'Hidden across every story and hunt. Find all 16 for the legendary Moon Prize: $1,000. It will take a while. That’s the point.'},
   {t:'Keep it safe',b:'Your progress lives on this phone. Now and then I’ll remind you to copy a save code. Paste it in your Notes app and nothing gets lost.'},
   {t:'New stuff every Friday',b:'New chapters drop on Fridays, and weekly quests reset. Check “Things to do” at the top any time you’re not sure what to do. Tap the ? button up top to see this tour again.'}];
