@@ -42,6 +42,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .pill{flex:none;display:inline-flex;align-items:center;gap:6px;font:900 15px/1 var(--ui);font-variant-numeric:tabular-nums;padding:7px 11px 7px 8px;border-radius:999px;background:rgba(255,246,233,.12);}
 .coin{width:18px;height:18px;flex:none;}
 .hud nav{display:flex;gap:4px;}
+.pill.help{border:0;cursor:pointer;justify-content:center;min-width:34px;padding:6px 0;font:900 15px/1 var(--ui);color:#2b2230;background:var(--gold);}
+.pill.help:hover{filter:brightness(1.08);}
 .hud nav a{color:#e9dcf2;text-decoration:none;font:800 12px/1 var(--ui);padding:8px 10px;border-radius:999px;}
 .hud nav a:hover,.hud nav a:focus-visible{background:rgba(255,246,233,.14);color:#fff;}
 @media (max-width:720px){.hud nav{display:none}.pill{font-size:14px;padding:6px 9px 6px 7px}}
@@ -307,6 +309,7 @@ footer{color:#fff1e2;font:400 22px/1.2 var(--hand);text-align:center;}
     <nav aria-label="Sections"><a href="#play">Play</a><a href="#quests">Quests</a><a href="#season">Season</a><a href="#shop">Gift Shop</a><a href="#mine">My rewards</a></nav>
     <span class="pill" title="Fox Coins"><svg class="coin"><use href="#i-coin"/></svg><span id="hudCoins">0</span></span>
     <span class="pill shard" title="Moon Shards"><svg class="coin"><use href="#i-shard"/></svg><span id="hudShards">0/16</span></span>
+    <button class="pill help" id="helpBtn" type="button" aria-label="How it works" title="How it works">?</button>
   </div>
 </header>
 
@@ -713,11 +716,12 @@ function askName(first,then){
 }
 const TOUR=[
   {t:'Welcome, {name}!',b:'This is your camp. I’m the dragonfly, and I’ll always point you to what’s next.'},
-  {t:'Every play pays',b:'Stories and hunts earn Fox Coins and XP. First finishes pay the most, and replays still count.'},
-  {t:'The Gift Shop is real',b:'Spend coins on real Starbucks cards and Apple Pay cash. Some rewards you win free just by hitting milestones. When you claim one, the dragonfly writes a little text for you. Just copy it and send it to Friendship 7. He’ll pay up.'},
+  {t:'Every play pays',b:'Sidequests and hunts earn Fox Coins and XP. First finishes pay the most, and replays still count.'},
+  {t:'The Gift Shop is real',b:'Spend coins on real Starbucks cards and Apple Pay cash. Some rewards you win free just by hitting milestones. You can claim a little every day. When you claim one, the dragonfly writes a little text for you. Just copy it and send it to Friendship 7. He’ll pay up.'},
   {t:'16 Moon Shards',b:'Hidden across every story and hunt. Find all 16 for the legendary Moon Prize: $1,000. It will take a while. That’s the point.'},
   {t:'Keep it safe',b:'Your progress lives on this phone. Now and then I’ll remind you to copy a save code. Paste it in your Notes app and nothing gets lost.'},
-  {t:'New stuff every Friday',b:'New chapters drop on Fridays, and weekly quests reset. Check “Things to do” at the top any time you’re not sure what to do.'}];
+  {t:'New stuff every Friday',b:'New chapters drop on Fridays, and weekly quests reset. Check “Things to do” at the top any time you’re not sure what to do. Tap the ? button up top to see this tour again.'}];
+$('helpBtn').onclick=()=>tour(0);
 function tour(i,then){ i=i||0; const s=TOUR[i];
   openModal('<p class="eyebrow" style="color:#a0573a">Camp tour · '+(i+1)+' of '+TOUR.length+'</p><h2 id="mTitle">'+esc(s.t.replace('{name}',p.name||'hunter'))+'</h2>'+guide(esc(s.b))+'<div class="dots">'+TOUR.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join('')+'</div><div class="sheet-btns">'+(i?'<button class="ghost" id="tBack">Back</button>':'')+'<button id="tNext">'+(i<TOUR.length-1?'Next':'Let’s go')+'</button></div>');
   if(i) $('tBack').onclick=()=>tour(i-1,then);
