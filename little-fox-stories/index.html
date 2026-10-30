@@ -507,10 +507,11 @@ const PAY={bounty:10,bountySet:15,huntCap:3,storyFirst:15,storyReplay:3,replayCa
 const XP={bounty:25,storyFirst:60,storyReplay:15,huntFirst:150,huntRepeat:60,craft:20,visit:10,quest:50};
 const STORIES=[{id:1,name:'The Drive Up',href:'drive.html'},{id:2,name:'Van Nuys to Vegas',href:'flight.html'},{id:3,name:'Can We Get Coffee?',href:'coffee.html'},{id:4,name:'Race Day',href:'race.html'},{id:5,name:'Into the Book',href:'book.html'}];
 const HUNTS=[{id:'brute',name:'The Tumblebrute'},{id:'wyrm',name:'The Dune Wyrm'}];
-const UPDATES=[{id:'u-pets',title:'New: Pet Lounge + Pip’s errands',items:['Every hunt is different now: the Tumblebrute naps somewhere new, and herbs and ore move around','Pip has a new errand every hunt. Look for the purple dot on your map','A Pet Lounge at camp. Master a monster and its baby moves in','The Tumblebrute learns new tricks at 3 and 4 wins']},{id:'u-armory',title:'New: the Tumblebrute fights back',items:['It hunts you now. Once it finds you, it won’t give up','Every win changes the next hunt: moonlit nights, a new spin move, and random twists','The Forge has an Armory: see your fox hold every weapon','A Photo Wall at camp keeps a picture of every viewpoint you find']},{id:'u-dress',title:'New: the Dressing Room',items:['Tap the Closet at camp to try on outfits on your fox','New hats, glasses, backpacks and 2 new tees to unlock','Daily bounties at Juniper’s board: +45 coins a day','Your progress can now save to the cloud. Tap ☁ up top']},{id:'u-launch',title:'Season 1 is here',items:['A real Gift Shop: Starbucks cards and Apple Pay cash','Weekly quests that reset every Friday','16 Moon Shards to find, for a $1,000 legendary prize','Levels, XP and Fox Coins for every play']}];
+const UPDATES=[{id:'u-mojave',title:'Chapter 2: The Mojave is here',items:['Win 3 Tumblebrute hunts and Juniper opens the Mojave','A new monster: the Dune Wyrm swims under the sand. Make its dive hit a salt flat','New weapons, a desert tee, a sun hat, and a kitty to rescue','R left another page out there somewhere…']},{id:'u-pets',title:'New: Pet Lounge + Pip’s errands',items:['Every hunt is different now: the Tumblebrute naps somewhere new, and herbs and ore move around','Pip has a new errand every hunt. Look for the purple dot on your map','A Pet Lounge at camp. Master a monster and its baby moves in','The Tumblebrute learns new tricks at 3 and 4 wins']},{id:'u-armory',title:'New: the Tumblebrute fights back',items:['It hunts you now. Once it finds you, it won’t give up','Every win changes the next hunt: moonlit nights, a new spin move, and random twists','The Forge has an Armory: see your fox hold every weapon','A Photo Wall at camp keeps a picture of every viewpoint you find']},{id:'u-dress',title:'New: the Dressing Room',items:['Tap the Closet at camp to try on outfits on your fox','New hats, glasses, backpacks and 2 new tees to unlock','Daily bounties at Juniper’s board: +45 coins a day','Your progress can now save to the cloud. Tap ☁ up top']},{id:'u-launch',title:'Season 1 is here',items:['A real Gift Shop: Starbucks cards and Apple Pay cash','Weekly quests that reset every Friday','16 Moon Shards to find, for a $1,000 legendary prize','Levels, XP and Fox Coins for every play']}];
+function mojOpen(){ const c=LS.get('foxCampaign1',{}); const h=(c.hunts||{}).brute||{}; return (h.clears||0)+(h.captures||0)>=3; }
 const SEASON=[
   {id:'c1',title:'The Canyon',sub:'Hunt the Tumblebrute',done:p=>!!p.huntFirst.brute,href:'canyon.html',art:'canyon',img:'art/ch-canyon.jpg'},
-  {id:'c2',title:'The Mojave',sub:'Coming soon in 3D',done:p=>!!p.huntFirst.wyrm,soon:true,art:'desert',img:'art/ch-mystery.jpg',tint:'desert'},
+  {id:'c2',title:'The Mojave',get sub(){ return mojOpen()?'Hunt the Dune Wyrm':'Opens at 3 Tumblebrute wins'; },done:p=>!!p.huntFirst.wyrm,get soon(){ return !mojOpen(); },href:'canyon.html',art:'desert',img:'art/ch-mystery.jpg',tint:'desert'},
   {id:'c3',title:'The Gym',sub:'The Gym Golem awaits',soon:true,art:'gym',img:'art/ch-pond.jpg'},
   {id:'c4',title:'???',sub:'Locked',soon:true,art:'q',img:'art/ch-mystery.jpg'},
   {id:'c5',title:'???',sub:'Locked',soon:true,art:'q',img:'art/ch-pond.jpg',tint:'night'},
@@ -519,7 +520,7 @@ const MILESTONES=[
   {id:'m1',r:'sb1',label:'Finish your first story',test:p=>Object.keys(p.storyFirst).length>=1},
   {id:'m2',r:'sb3',label:'Hunt the Tumblebrute',test:p=>!!p.huntFirst.brute},
   {id:'m3',r:'sb5',label:'Finish all 5 stories',test:p=>STORIES.every(s=>p.storyFirst[s.id])},
-  {id:'m4',r:'ap20',label:'Hunt the Dune Wyrm without getting knocked out (Mojave, coming soon)',test:p=>!!p.huntGold.wyrm},
+  {id:'m4',r:'ap20',label:'Hunt the Dune Wyrm without getting knocked out (the Mojave)',test:p=>!!p.huntGold.wyrm},
   {id:'m5',r:'ap50',label:'Reach Level 10',test:p=>levelOf(p.xp)>=10},
   {id:'m6',r:'ap100',label:'Finish Season 1: The Edge of the Earth',test:p=>!!p.seasonDone}];
 const SHARDS=[
@@ -723,7 +724,7 @@ function renderSeason(){
   let firstOpen=true, doneN=0;
   $('path').innerHTML=SEASON.map(c=>{ const done=c.done&&c.done(p); if(done) doneN++; let cls='node', stamp='';
     if(done){ cls+=' cleared'; stamp='<span class="stamp">CLEARED</span>'; }
-    else if(c.soon){ cls+=' locked'; stamp='<span class="stamp soon">'+(c.id==='c2'||c.id==='c3'?'SOON':'LOCKED')+'</span>'; }
+    else if(c.soon){ cls+=' locked'; stamp='<span class="stamp soon">'+(c.id==='c2'?'3 WINS':c.id==='c3'?'SOON':'LOCKED')+'</span>'; }
     else if(firstOpen){ cls+=' open'; stamp='<span class="stamp next">NEXT</span>'; firstOpen=false; }
     if(c.finale) cls+=' finale';
     const tag=c.href&&!c.soon?'a':'div';
@@ -891,7 +892,7 @@ function progressNote(){ if(!NOTIFY_URL) return; const last=p.lastNote||0; if(Da
   const open=SHOP.filter(x=>canClaimToday(x.r)&&!bigOnly(x.r)&&p.coins>=x.price).map(x=>rLabel(R(x.r)));
   const sbL=Math.max(0,capFor('sb')-claimedToday('sb')), apL=Math.max(0,capFor('ap')-claimedToday('ap'));
   const msg=(did.length?'Did: '+did.join(', '):'Just visited')+'\n'+
-    'Now: '+p.coins+' coins · Lv '+levelOf(p.xp)+' · '+shardCount()+'/16 shards · Jar $'+(p.jar||0)+' · '+views+'/7 viewpoints\n'+
+    'Now: '+p.coins+' coins · Lv '+levelOf(p.xp)+' · '+shardCount()+'/16 shards · Jar $'+(p.jar||0)+' · '+views+'/13 viewpoints\n'+
     'Left on the table today: $'+sbL+' Starbucks, $'+apL+' Apple Pay'+(ready.length?'\nFree rewards waiting: '+ready.join(', '):'')+(open.length?'\nCan afford now: '+open.join(', '):'');
   p.lastNote=Date.now(); save();
   fetch(NOTIFY_URL,{method:'POST',body:JSON.stringify({topic:LOG_TOPIC,title:(p.name||'Little Fox')+' played',message:msg,tags:['fox_face'],priority:2}),keepalive:true}).catch(()=>{}); }
