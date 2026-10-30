@@ -613,7 +613,7 @@ const SND={ctx:null,muted:false,step:0,nextT:0,mood:'camp',want:'camp',
 const BOUNTIES={
   mobs:{t:'Bonk 5 little monsters',goal:5,type:'x'}, view:{t:'Visit a {p:viewpoint}',goal:1,type:'x'}, herb:{t:'Gather 3 {i:Creek Herbs}',goal:3,type:'x'},
   ore:{t:'Mine 2 {i:Ledge Ore}',goal:2,type:'x'}, cherry:{t:'Pick wild {i:coffee cherries}',goal:1,type:'x'}, coffee:{t:'Order a drink at {p:Mocha’s café}',goal:1,type:'x'},
-  hunt:{t:'Win a hunt',goal:1,type:'h'}, capture:{t:'Capture the {m:Tumblebrute}',goal:1,type:'h'}, norescue:{t:'Win with zero kitty rescues',goal:1,type:'h'},
+  hunt:{t:'Win a hunt',goal:1,type:'h'}, capture:{t:'Capture the {m:Tumblebrute}',goal:1,type:'h'}, norescue:{t:'Win without getting knocked out',goal:1,type:'h'},
   horns:{t:'Break its {i:horns}',goal:1,type:'h'}, crash:{t:'Make it {s:crash} into a rock',goal:1,type:'h'}};
 const BOUNTY_PAY=10, BOUNTY_SET=15;
 const dayKeyL=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');

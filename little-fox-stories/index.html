@@ -501,15 +501,15 @@ const MILESTONES=[
   {id:'m1',r:'sb1',label:'Finish your first story',test:p=>Object.keys(p.storyFirst).length>=1},
   {id:'m2',r:'sb3',label:'Hunt the Tumblebrute',test:p=>!!p.huntFirst.brute},
   {id:'m3',r:'sb5',label:'Finish all 5 stories',test:p=>STORIES.every(s=>p.storyFirst[s.id])},
-  {id:'m4',r:'ap20',label:'Hunt the Dune Wyrm with zero kitty rescues (Mojave, coming soon)',test:p=>!!p.huntGold.wyrm},
+  {id:'m4',r:'ap20',label:'Hunt the Dune Wyrm without getting knocked out (Mojave, coming soon)',test:p=>!!p.huntGold.wyrm},
   {id:'m5',r:'ap50',label:'Reach Level 10',test:p=>levelOf(p.xp)>=10},
   {id:'m6',r:'ap100',label:'Finish Season 1: The Edge of the Earth',test:p=>!!p.seasonDone}];
 const SHARDS=[
   ...STORIES.map(s=>({name:'Finish '+s.name,test:p=>!!p.storyFirst[s.id]})),
   {name:'Hunt the Tumblebrute',test:p=>!!p.huntFirst.brute},
-  {name:'Hunt the Tumblebrute with zero kitty rescues',test:p=>!!p.huntGold.brute},
+  {name:'Hunt the Tumblebrute without getting knocked out',test:p=>!!p.huntGold.brute},
   {name:'Hunt the Dune Wyrm',test:p=>!!p.huntFirst.wyrm},
-  {name:'Hunt the Dune Wyrm with zero kitty rescues',test:p=>!!p.huntGold.wyrm},
+  {name:'Hunt the Dune Wyrm without getting knocked out',test:p=>!!p.huntGold.wyrm},
   {name:'Visit camp 7 days in a row',test:p=>p.bestStreak>=7},
   {name:'Reach Level 10',test:p=>levelOf(p.xp)>=10},
   {name:'Finish every weekly quest in 3 different weeks',test:p=>Object.keys(p.questSets).length>=3},
@@ -520,7 +520,7 @@ const SHARDS=[
 const QUEST_POOL=[
   {id:'stories2',text:'Play any 2 sidequests',goal:2,count:e=>e.filter(x=>x.k==='story').length,go:'#stories'},
   {id:'hunt1',text:'Go on a hunt in Canyon Hunt',goal:1,count:e=>e.filter(x=>x.k==='hunt').length,go:'canyon.html'},
-  {id:'gold1',text:'Win a hunt with zero kitty rescues',goal:1,count:e=>e.filter(x=>x.k==='hunt'&&x.faints===0).length,go:'canyon.html'},
+  {id:'gold1',text:'Win a hunt without getting knocked out',goal:1,count:e=>e.filter(x=>x.k==='hunt'&&x.faints===0).length,go:'canyon.html'},
   {id:'days3',text:'Visit camp on 3 different days',goal:3,count:(e,p,wk)=>p.days.filter(d=>d>=wk).length,go:null},
   {id:'replay1',text:'Replay a story you already finished',goal:1,count:e=>e.filter(x=>x.k==='story'&&x.replay).length,go:'#stories'},
   {id:'forge1',text:'Craft something at the Forge',goal:1,count:e=>e.filter(x=>x.k==='craft').length,go:'canyon.html'},
@@ -562,7 +562,7 @@ function ingest(){
       if(!p.huntFirst[e.id]){ p.huntFirst[e.id]=e.t; earn(PAY.huntFirst,XP.huntFirst,'First hunt: '+h.name,true); }
       else { const dk=dayKey(new Date(e.t)); p.huntDay=p.huntDay||{}; p.huntDay[dk]=(p.huntDay[dk]||0)+1; e.paid=p.huntDay[dk]<=PAY.huntCap;
         if(e.paid) earn(PAY.huntRepeat,XP.huntRepeat,'Hunted '+h.name+' again'); else earn(0,XP.huntRepeat,'Hunted '+h.name+' again · daily coin limit reached, XP still counts'); }
-      if(e.faints===0){ if(!p.huntGold[e.id]) feed.push({text:'Zero kitty rescues on '+h.name+'! Moon Shard found',coins:0,big:true}); p.huntGold[e.id]=true; if(e.paid!==false) earn(PAY.noRescue,0,'No kitty rescues bonus'); } }
+      if(e.faints===0){ if(!p.huntGold[e.id]) feed.push({text:'No knockouts on '+h.name+'! Moon Shard found',coins:0,big:true}); p.huntGold[e.id]=true; if(e.paid!==false) earn(PAY.noRescue,0,'No-knockout bonus'); } }
     else if(e.k==='bounty'){ p.bountyPaid=p.bountyPaid||{}; const key=e.day+':'+e.id; if(!p.bountyPaid[key]){ p.bountyPaid[key]=1; earn(PAY.bounty,XP.bounty,'Daily bounty done'); } }
     else if(e.k==='bountySet'){ p.bountyPaid=p.bountyPaid||{}; const key=e.day+':set'; if(!p.bountyPaid[key]){ p.bountyPaid[key]=1; earn(PAY.bountySet,0,'All 3 daily bounties done!',true); } }
     else if(e.k==='craft'){ if(!p.crafted[e.id]){ p.crafted[e.id]=true; earn(PAY.craft,XP.craft,'Crafted new gear at the Forge'); } }
@@ -642,7 +642,7 @@ function nextAction(){
   const wq=weekQuests(), ev=weekEvents(LS.get('foxEvents',[])), wk=dayKey(weekStart());
   const q=wq.find(q=>q.count(ev,p,wk)<q.goal&&q.go);
   if(q) return {eyebrow:'Weekly quest',title:q.text,why:'Finish all three this week for a bonus.',href:q.go,gain:[['coin','+'+PAY.quest]]};
-  if(g) return {eyebrow:'Moon Shard',title:'Beat '+g.name+' with zero kitty rescues',why:'Roll out of the red zones. Drink coffee early.',href:g.id==='brute'?'canyon.html':'hunt.html',gain:[['shard','+1 shard'],['coin','+'+PAY.noRescue]]};
+  if(g) return {eyebrow:'Moon Shard',title:'Beat '+g.name+' without getting knocked out',why:'Roll out of the red zones. Drink coffee early.',href:g.id==='brute'?'canyon.html':'hunt.html',gain:[['shard','+1 shard'],['coin','+'+PAY.noRescue]]};
   return {eyebrow:'All caught up',title:'Replay a favorite',why:'New chapters drop Friday. Replays still earn coins.',href:'#stories',gain:[['coin','+'+PAY.storyReplay]]};
 }
 function todoItems(){
@@ -651,7 +651,7 @@ function todoItems(){
   // 1. main quest
   if(!played3d) L.push({big:1,isNew:1,eyebrow:'Main quest',title:'Enter the 3D Canyon Hunt',why:'A whole new world. Track the Tumblebrute under the moon.',href:'canyon.html',thumb:'art/hunt.jpg'});
   else if(!p.huntFirst.brute) L.push({big:1,eyebrow:'Main quest',title:'Hunt the Tumblebrute',why:'Your biggest payout yet. Bring coffee.',href:'canyon.html',thumb:'art/hunt.jpg'});
-  else if(!p.huntGold.brute) L.push({big:1,eyebrow:'Main quest · Moon Shard',title:'Win with zero kitty rescues',why:'Roll out of the red zones. Drink coffee early.',href:'canyon.html',thumb:'art/hunt.jpg'});
+  else if(!p.huntGold.brute) L.push({big:1,eyebrow:'Main quest · Moon Shard',title:'Win without getting knocked out',why:'Roll out of the red zones. Drink coffee early.',href:'canyon.html',thumb:'art/hunt.jpg'});
   else L.push({big:1,eyebrow:'Main quest',title:'Back to the canyon',why:'Secrets, viewpoints and a meaner Tumblebrute.',href:'canyon.html',thumb:'art/hunt.jpg'});
   // 2. something new: reward ready > daily bounties > weekly quest > shards
   const camp=LS.get('foxCampaign1',{}), dk=dayKey(), bt=camp.bounty&&camp.bounty.day===dk?camp.bounty:null, bn=bt?bt.ids.filter(i=>bt.done&&bt.done[i]).length:0;
