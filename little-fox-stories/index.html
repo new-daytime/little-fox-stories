@@ -82,6 +82,12 @@ button:focus-visible,.btn:focus-visible,a:focus-visible{outline:3px solid var(--
 .continue span.why{display:block;margin-top:6px;font:700 19px/1.15 var(--hand);color:#e9dcf2;}
 .continue .go{grid-column:1/-1;justify-self:start;}
 .todo{display:flex;flex-direction:column;gap:10px;padding:16px;color:var(--paper);background:linear-gradient(135deg,#3a2c44,#5c4d73);border-radius:18px;box-shadow:0 3px 0 #1d1a3a,0 22px 40px rgba(30,20,50,.4);}
+.today{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:2px;padding:12px;border-radius:14px;background:rgba(18,14,34,.45);border:1.5px dashed rgba(242,193,78,.55);color:inherit;text-decoration:none;}
+.today b{display:block;font:900 10.5px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;}
+.today span{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font:800 14px/1.2 var(--ui);}
+.today .gc{font-style:normal;display:inline-block;padding:3px 7px;border-radius:6px;font:900 13px/1 var(--ui);color:#fff;}
+.today small{display:block;margin-top:7px;font:700 15px/1.25 var(--hand);color:#e9dcf2;}
+.today .arr{font:900 22px/1 var(--ui);color:var(--gold);}
 .todo .tdh{margin:2px 4px 0;font:800 11px/1 var(--ui);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);}
 .td{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px;border-radius:14px;background:rgba(255,246,233,.08);text-decoration:none;color:inherit;transition:transform .2s,background .2s;}
 .td:hover{transform:translateX(3px);background:rgba(255,246,233,.14);}
@@ -634,13 +640,25 @@ function todoItems(){
   if(s) L.push({isNew:!Object.keys(p.storyFirst).length?0:1,eyebrow:'Sidequest',title:'Play '+s.name,why:'A quick one. Coins and a Moon Shard.',href:s.href,ico:'fly'});
   else L.push({eyebrow:'Sidequests',title:'Replay a favorite',why:'Replays still earn coins.',href:'#stories',ico:'fly'});
   return L; }
+function todayHTML(){
+  const sbL=Math.max(0,capFor('sb')-claimedToday('sb')), apL=Math.max(0,capFor('ap')-claimedToday('ap'));
+  const ready=MILESTONES.filter(m=>m.test(p)&&!p.milestones[m.id]&&canClaimToday(m.r));
+  const open=SHOP.filter(s=>canClaimToday(s.r)&&!bigOnly(s.r)).sort((a,b)=>a.price-b.price);
+  const can=open.filter(s=>p.coins>=s.price), next=open.find(s=>p.coins<s.price);
+  let line;
+  if(!sbL&&!apL) line='You claimed everything for today. Nice! More opens at midnight.';
+  else if(ready.length) line='You have a free reward waiting: '+rLabel(R(ready[0].r))+'. Claim it in the Gift Shop.';
+  else if(can.length) line='You can redeem a '+rLabel(R(can[can.length-1].r))+' right now with your coins.';
+  else if(next) line=(next.price-p.coins)+' more coins for a '+rLabel(R(next.r))+'. A hunt or sidequest gets you there.';
+  else line='Keep playing to earn more coins.';
+  return '<a class="today" href="#shop"><div><b>Still up for grabs today</b><span><i class="gc sb">$'+sbL+'</i> Starbucks <i class="gc ap">$'+apL+'</i> Apple Pay</span><small>'+esc(line)+'</small></div><span class="arr" aria-hidden="true">›</span></a>'; }
 function todoHTML(t){ const vb=t.ico==='coin'||t.ico==='shard'?'0 0 20 20':'0 0 54 30';
   return '<a class="td'+(t.big?' big':'')+'" href="'+t.href+'"><div class="th">'+(t.thumb?'<img src="'+t.thumb+'" alt="">':'<svg viewBox="'+vb+'"><use href="#i-'+t.ico+'"/></svg>')+'</div><div><small>'+(t.isNew?'<span class="new">New</span>':'')+esc(t.eyebrow)+'</small><strong>'+esc(t.title)+'</strong><span class="why">'+esc(t.why)+'</span></div><span class="arr" aria-hidden="true">›</span></a>'; }
 function tagHTML(t){ return '<span class="tag"><svg class="coin" style="width:13px;height:13px"><use href="#i-'+(t[0]==='shard'?'shard':'coin')+'"/></svg>'+esc(t[1])+'</span>'; }
 function renderTop(){
   const name=p.name||'Little Fox'; const h=new Date().getHours();
   $('hello').textContent=(h<12?'Good morning, ':h<18?'Hey, ':'Evening, ')+name;
-  $('todo').innerHTML='<p class="tdh">Things to do</p>'+todoItems().map(todoHTML).join('');
+  $('todo').innerHTML='<p class="tdh">Things to do</p>'+todoItems().map(todoHTML).join('')+todayHTML();
   const days=(5-new Date().getDay()+7)%7; $('dropsText').textContent=days===0?'New stuff drops today!':'New stuff in '+days+' day'+(days>1?'s':'')+' · Friday';
 }
 function renderQuests(){
