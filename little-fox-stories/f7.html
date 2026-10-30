@@ -1,0 +1,95 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Friendship 7 Payouts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caprasimo&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Payout desk for Friendship 7: check a claim code, mark it paid, see what's pending and what's been paid. */
+:root{--ink:#3a2c44;--paper:#fff6e9;--edge:#efd9bf;--good:#2f8f6e;--bad:#c8506e;--night:#2b2752;--gold:#f2c14e;--sb:#2f8f6e;--ap:#3b3a45;
+  --display:'Caprasimo','Cooper Black',Georgia,serif;--ui:'Nunito',system-ui,-apple-system,sans-serif;color-scheme:light;}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;min-height:100vh;background:var(--night);color:var(--ink);font-family:var(--ui);padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));}
+.wrap{width:min(460px,100%);margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.card{background:var(--paper);border-radius:16px;padding:18px;box-shadow:0 3px 0 var(--edge),0 18px 36px rgba(0,0,0,.3);display:flex;flex-direction:column;gap:12px;}
+.eyebrow{margin:0;font:800 11px/1.2 var(--ui);letter-spacing:.16em;text-transform:uppercase;color:#a0573a;}
+h1{margin:0;font:400 30px/1 var(--display);}
+h2{margin:0;font:400 22px/1.1 var(--display);}
+p{margin:0;font:700 14px/1.45 var(--ui);color:#5b4a62;}
+input{width:100%;font:900 21px/1 ui-monospace,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;padding:13px;border-radius:12px;border:2px solid var(--edge);background:#fffaf2;color:var(--ink);}
+input:focus{outline:3px solid var(--gold);outline-offset:1px;}
+#out{border-radius:12px;padding:14px;font:800 15px/1.4 var(--ui);background:#f3e9dc;}
+#out b{display:block;font:900 24px/1.1 var(--ui);margin-bottom:4px;}
+#out.good{background:#e3f3ea;color:var(--good);}#out.bad{background:#fbe5ea;color:var(--bad);}#out.paid{background:#efeaf5;color:#5c4d8a;}
+button{font:900 15px/1 var(--ui);border:0;border-radius:999px;padding:13px 18px;cursor:pointer;background:var(--ink);color:#fff6e9;}
+button.gold{background:var(--gold);color:#2b2230;box-shadow:0 3px 0 #a86a10;}
+button.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--edge);}
+button.sm{padding:8px 12px;font-size:12.5px;}
+.row{display:flex;gap:8px;flex-wrap:wrap;}
+.totals{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.tot{border-radius:12px;padding:10px;background:#f3e9dc;display:flex;flex-direction:column;gap:4px;}
+.tot b{font:900 20px/1 var(--ui);}.tot span{font:800 10.5px/1.2 var(--ui);letter-spacing:.08em;text-transform:uppercase;color:#8a6f7c;}
+.list{display:flex;flex-direction:column;gap:8px;}
+.it{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border-radius:12px;background:#fffaf2;border:2px solid var(--edge);}
+.it .chip{font:900 13px/1 var(--ui);color:#fff;padding:7px 8px;border-radius:8px;min-width:46px;text-align:center;}
+.chip.sb{background:var(--sb)}.chip.ap{background:var(--ap)}.chip.moon{background:#6a4f86}
+.it code{display:block;font:800 13px/1.2 ui-monospace,Menlo,monospace;color:var(--ink);overflow-wrap:anywhere;}
+.it small{display:block;font:700 11.5px/1.3 var(--ui);color:#8a6f7c;}
+.empty{font:700 13px/1.4 var(--ui);color:#8a6f7c;}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff6e9;font:800 13px/1 var(--ui);padding:10px 14px;border-radius:999px;opacity:0;transition:opacity .2s;pointer-events:none;}
+.toast.on{opacity:1}
+</style></head><body>
+<div class="wrap">
+  <div class="card">
+    <p class="eyebrow">For Friendship 7 only · don’t share this page</p>
+    <h1>Payout desk</h1>
+    <p>Tap a ntfy alert and the code lands here. Check it’s real, pay her, then mark it paid.</p>
+    <input id="code" autocomplete="off" spellcheck="false" placeholder="FOX-XXXX-XXXXX" aria-label="Claim code">
+    <div id="out" role="status">Waiting for a code.</div>
+    <div class="row" id="acts" hidden><button class="gold" id="payBtn">Mark as paid</button><button class="ghost" id="copyBtn">Copy code</button></div>
+  </div>
+  <div class="card">
+    <h2>Totals paid</h2>
+    <div class="totals"><div class="tot"><b id="tSb">$0</b><span>Starbucks</span></div><div class="tot"><b id="tAp">$0</b><span>Apple Pay</span></div><div class="tot"><b id="tAll">$0</b><span>All time</span></div></div>
+  </div>
+  <div class="card"><h2>Waiting to pay</h2><div class="list" id="pend"></div></div>
+  <div class="card"><h2>Paid</h2><div class="list" id="paid"></div>
+    <p style="font-size:12px">This list lives on this phone. Open alerts on the same phone so it stays in one place.</p></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const SALT='friendship7-moon-16', AL='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const TYPES=[['sb',5],['sb',10],['sb',15],['ap',20],['ap',50],['ap',100],['moon',1000],['sb',1],['sb',3],['ap',10]];
+const label=t=>t[0]==='moon'?'$1,000 Moon Prize':'$'+t[1]+(t[0]==='sb'?' Starbucks card':' Apple Pay');
+function fnv(s){ let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; } return h>>>0; }
+function dec(str){ let n=0; for(const c of str){ const v=AL.indexOf(c); if(v<0) return -1; n=n*32+v; } return n; }
+function parse(raw){ raw=raw.toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/^FOX/,''); if(raw.length<9) return {partial:raw.length>0};
+  const idx=AL.indexOf(raw[0]), serial=dec(raw.slice(1,5)), chk=dec(raw.slice(5,9));
+  if(idx<0||idx>=TYPES.length||serial<0||chk<0||(fnv(idx+'|'+serial+'|'+SALT)&0xFFFFF)!==chk) return {bad:true};
+  const code='FOX-'+raw.slice(0,4)+'-'+raw.slice(4,9); return {ok:true,code,type:TYPES[idx]}; }
+const KEY='f7Payouts';
+let db=(()=>{ try{ return JSON.parse(localStorage.getItem(KEY))||{}; }catch(e){ return {}; } })(); db.items=db.items||[];
+const save=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(db)); }catch(e){} };
+const $=id=>document.getElementById(id);
+const fmtD=t=>new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+new Date(t).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+function toast(t){ const e=$('toast'); e.textContent=t; e.classList.add('on'); clearTimeout(toast.h); toast.h=setTimeout(()=>e.classList.remove('on'),1800); }
+let cur=null;
+function check(){ const r=parse($('code').value); const out=$('out'); out.className=''; $('acts').hidden=true; cur=null;
+  if(r.partial){ out.textContent='Keep typing…'; return; } if(!r.ok&&!r.bad){ out.textContent='Waiting for a code.'; return; }
+  if(r.bad){ out.className='bad'; out.innerHTML='<b>Not a valid code</b>Check for a typo. Codes look like FOX-ABCD-EFGHJ.'; return; }
+  cur=r; let it=db.items.find(x=>x.code===r.code); if(!it){ it={code:r.code,kind:r.type[0],amt:r.type[1],seen:Date.now()}; db.items.unshift(it); save(); render(); }
+  if(it.paid){ out.className='paid'; out.innerHTML='<b>Already paid</b>'+label(r.type)+' · paid '+fmtD(it.paid)+'. Don’t pay it twice.'; $('acts').hidden=false; $('payBtn').hidden=true; return; }
+  out.className='good'; out.innerHTML='<b>'+label(r.type)+'</b>Real code. She earned it. Pay her, then tap Mark as paid.'; $('acts').hidden=false; $('payBtn').hidden=false; }
+function render(){ const paid=db.items.filter(x=>x.paid), pend=db.items.filter(x=>!x.paid);
+  const sum=k=>paid.filter(x=>x.kind===k).reduce((a,x)=>a+x.amt,0);
+  $('tSb').textContent='$'+sum('sb'); $('tAp').textContent='$'+sum('ap'); $('tAll').textContent='$'+paid.reduce((a,x)=>a+x.amt,0).toLocaleString();
+  const row=(x,btn)=>'<div class="it"><span class="chip '+x.kind+'">$'+x.amt.toLocaleString()+'</span><div><code>'+x.code+'</code><small>'+(x.kind==='sb'?'Starbucks':x.kind==='ap'?'Apple Pay':'Moon Prize')+' · '+(x.paid?'paid '+fmtD(x.paid):'claimed '+fmtD(x.seen))+'</small></div>'+btn+'</div>';
+  $('pend').innerHTML=pend.length?pend.map(x=>row(x,'<button class="sm gold" data-pay="'+x.code+'">Paid</button>')).join(''):'<p class="empty">Nothing waiting. Nice.</p>';
+  $('paid').innerHTML=paid.length?paid.map(x=>row(x,'<button class="sm ghost" data-undo="'+x.code+'">Undo</button>')).join(''):'<p class="empty">No payouts yet.</p>'; }
+function markPaid(code){ const it=db.items.find(x=>x.code===code); if(!it||it.paid) return; it.paid=Date.now(); save(); render(); if(cur&&cur.code===code) check(); toast('Marked paid ✓'); }
+$('code').addEventListener('input',check);
+$('payBtn').onclick=()=>{ if(cur) markPaid(cur.code); };
+$('copyBtn').onclick=()=>{ if(!cur) return; (navigator.clipboard?navigator.clipboard.writeText(cur.code):Promise.reject()).then(()=>toast('Code copied'),()=>toast('Long-press the code to copy')); };
+document.addEventListener('click',e=>{ const p=e.target.closest('[data-pay]'); if(p) markPaid(p.dataset.pay); const u=e.target.closest('[data-undo]'); if(u&&confirm('Move this back to waiting?')){ const it=db.items.find(x=>x.code===u.dataset.undo); if(it){ delete it.paid; save(); render(); if(cur) check(); } } });
+const q=new URLSearchParams(location.search).get('code'); if(q){ $('code').value=q; }
+render(); check();
+</script></body></html>

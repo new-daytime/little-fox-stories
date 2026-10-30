@@ -593,7 +593,7 @@ function bigOnly(rid){ const r=R(rid); return r.kind==='ap'&&r.amt>DAILY.ap&&!bi
 function canClaimToday(rid){ const r=R(rid); if(r.kind==='moon') return true; return claimedToday(r.kind)+r.amt<=capFor(r.kind); }
 function claim(rid,source){ const code=makeCode(rid); const c={code,r:rid,source,t:Date.now(),sent:false}; p.claims.unshift(c); save(); notify(c); return code; }
 function notify(c){ if(!NOTIFY_URL) return; c.sending=true;
-  fetch(NOTIFY_URL,{method:'POST',body:JSON.stringify({topic:NOTIFY_TOPIC,title:(p.name||'Little Fox')+' claimed a reward!',message:rLabel(R(c.r))+'\nCode: '+c.code+'\nFrom: '+c.source,tags:['fox_face','moneybag'],priority:5,click:'https://claude.ai/code/artifact/2v1XPExEuN2RUPbuPZUu2P'}),keepalive:true})
+  fetch(NOTIFY_URL,{method:'POST',body:JSON.stringify({topic:NOTIFY_TOPIC,title:(p.name||'Little Fox')+' claimed a reward!',message:rLabel(R(c.r))+'\nCode: '+c.code+'\nFrom: '+c.source,tags:['fox_face','moneybag'],priority:5,click:'https://new-daytime.github.io/little-fox-stories/little-fox-stories/f7.html?code='+encodeURIComponent(c.code),actions:[{action:'view',label:'Check & pay',url:'https://new-daytime.github.io/little-fox-stories/little-fox-stories/f7.html?code='+encodeURIComponent(c.code)}]}),keepalive:true})
     .then(r=>{ if(!r.ok) throw 0; c.sent=true; c.auto=true; }).catch(()=>{ c.failed=true; }).finally(()=>{ c.sending=false; save(); renderAll(); const st=$('sendState'); if(st) st.innerHTML=c.sent?'<span class="tag gold">Sent to Friendship 7 ✓</span>':'<p class="small-note">Couldn’t send it automatically. No worries: copy the message and text it to Friendship 7.</p><button class="gold" data-copymsg="'+esc(c.code)+'">Copy message</button>'; }); }
 
 /* ---------- render ---------- */
