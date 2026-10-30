@@ -75,6 +75,17 @@ button:disabled{opacity:.45;cursor:default;}
 .loot span{font:800 12px/1 var(--ui);padding:7px 10px;border-radius:999px;background:#f3e3cf;color:#6d4f5c;}
 .loot span.rare{background:#fbe7b4;color:#7a4d10;}
 #decoBar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);width:min(620px,calc(100vw - 28px));background:var(--paper);color:var(--ink);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 40px rgba(20,10,40,.45);z-index:4;}
+.dhead{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.dhead b{display:block;font:400 22px/1 var(--display);}
+.dhead span{display:block;margin-top:3px;font:700 11.5px/1.2 var(--ui);color:var(--ink-soft);}
+.dtabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
+.dtabs button{flex:none;position:relative;background:var(--paper-2);color:var(--ink);box-shadow:inset 0 0 0 2px var(--edge);padding:8px 12px;font-size:12.5px;}
+.dtabs button.on{background:var(--ink);color:var(--paper);box-shadow:none;}
+.dtabs button i{position:absolute;top:3px;right:3px;width:8px;height:8px;border-radius:50%;background:var(--rose);}
+.dmsg{margin:0;padding:8px 10px;border-radius:10px;background:#2b2752;color:#fff6e9;font:800 12.5px/1.35 var(--ui);}
+#dressBar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);transform:translateX(-50%);width:min(620px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:var(--paper);color:var(--ink);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 40px rgba(20,10,40,.35);z-index:6;touch-action:pan-y;}
+#dressBar>*{flex-shrink:0;}
+body.dress #side,body.dress #obj,body.dress #callout,body.dress #mini,body.dress #meta,body.dress #joy{opacity:0!important;pointer-events:none!important;}
 #decoBar .tray{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;}
 #decoBar .tray button{flex:none;background:var(--paper-2);color:var(--ink);box-shadow:inset 0 0 0 2px var(--edge);padding:10px 12px;font-size:12px;}
 #decoBar .tray button.on{box-shadow:inset 0 0 0 3px var(--sunset);}
@@ -190,6 +201,7 @@ body.cine #pad,body.cine #side,body.cine #mini,body.cine #obj,body.cine #bars,bo
 <div class="sheet" id="sheet" hidden></div>
 <div id="results" hidden><div class="card" id="resCard"></div></div>
 <div id="decoBar" hidden></div>
+<div id="dressBar" hidden></div>
 <div id="loading">Building the canyon…<small>one sec</small></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -209,7 +221,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 
 /* =============== SAVE =============== */
 const SAVE_KEY='foxCampaign1';
-const DEF={mats:{},weapon:'twig',owned:['twig'],kittyCape:false,capeOn:false,tee:0,decos:{plant:1},placed:[{id:'plant',gx:2,gz:1,r:0}],pages:[],kitties:['ginger'],pets:[],hunts:{},looks:{},flags:{},notesDone:{},seen:{'w:twig':1,tee0:1,bow0:1,deco_plant:1},bow:0,buff:null,cafeUses:0,met:{},hollow:false};
+const DEF={mats:{},weapon:'twig',owned:['twig'],kittyCape:false,capeOn:false,tee:0,decos:{plant:1},placed:[{id:'plant',gx:2,gz:1,r:0}],pages:[],kitties:['ginger'],pets:[],hunts:{},looks:{},flags:{},notesDone:{},seen:{'w:twig':1,tee0:1,bow0:1,deco_plant:1,hat_none:1,gl_classic:1,pk_none:1},hat:'none',glasses:'classic',pack:'none',bow:0,buff:null,cafeUses:0,met:{},hollow:false};
 let S=(()=>{ try{ const v=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); return Object.assign(JSON.parse(JSON.stringify(DEF)),v||{}); }catch(e){ return JSON.parse(JSON.stringify(DEF)); } })();
 function save(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(S)); }catch(e){} }
 const MATS={thorn:'Sharp Thorn',hide:'Bramble Hide',core:'Moon Core',horn:'Moon-Bramble Horn',herb:'Creek Herb',ore:'Ledge Ore'};
@@ -217,8 +229,8 @@ const RARE={core:1,horn:1};
 const WEAPONS={twig:{name:'Twig Sword',atk:12,note:'A very serious stick.'},thornblade:{name:'Thornblade',atk:15,cost:{thorn:4,hide:2,ore:1},note:'Pointy. Like her opinions on the gym.'},moonbramble:{name:'Moon-Bramble Blade',atk:19,cost:{horn:1,core:1,ore:2},note:'Glows faintly. Breaking horns is the only way.'}};
 const KITTIES={ginger:{name:'Ginger',c:'#f2a65a'},smoke:{name:'Smoke',c:'#9a94a6'}};
 const DECOS={plant:{name:'Potted plant'},vase:{name:'Moonstone vase'},lamp:{name:'Mushroom lamp'}};
-const TEE_RULES=[()=>true,()=>!!(S.hunts.brute&&(S.hunts.brute.clears||S.hunts.brute.captures)),()=>S.cafeUses>0,()=>!!(S.hunts.brute&&S.hunts.brute.captures)];
-const TEE_HOW=['Starter tee','Hunt the Tumblebrute','Order at Mocha’s café','Capture the Tumblebrute'];
+const TEE_RULES=[()=>true,()=>!!(S.hunts.brute&&(S.hunts.brute.clears||S.hunts.brute.captures)),()=>S.cafeUses>0,()=>!!(S.hunts.brute&&S.hunts.brute.captures),()=>!!(S.hunts.brute&&S.hunts.brute.captures>=2),()=>S.cafeUses>=5];
+const TEE_HOW=['Starter tee','Hunt the Tumblebrute','Order at Mocha’s café','Capture the Tumblebrute','Capture the Tumblebrute twice','Order 5 drinks at Mocha’s café'];
 const PAGES={p1:{title:'Torn page · Day 1',text:'The moon rose wrong tonight. Too low, too bright, like it was leaning in to listen. By morning the brambles in the canyon were moving on their own. I’m following them up to the nest. If anyone finds this: the monsters aren’t angry. They’re scared. — R.'}};
 
 /* =============== RENDERER =============== */
@@ -249,12 +261,16 @@ const TEES=[
   {name:'Lilac Dragonfly Tee',col:'#a693c9',ink:'#3a2c44',art:'dragonfly',how:'Starter tee'},
   {name:'Midnight Moon Tee',col:'#2e2a3d',ink:'#f6e7c8',art:'moon',how:'Unlocks: hunt the Tumblebrute'},
   {name:'“Lista Barista?” Tee',col:'#f3e7d3',ink:'#7b3f52',art:'lista',how:'Unlocks: Gift Shop, 40 Fox Coins'},
-  {name:'Sage “Foo” Tee',col:'#9cb08a',ink:'#2f3a2a',art:'foo',how:'Unlocks: hunt the Dune Wyrm'}
+  {name:'Sage “Foo” Tee',col:'#9cb08a',ink:'#2f3a2a',art:'foo',how:'Unlocks: hunt the Dune Wyrm'},
+  {name:'Kitty Club Tee',col:'#f2b2c0',ink:'#3a2c44',art:'kitty'},
+  {name:'Coffee Run Tee',col:'#c9a56f',ink:'#3a2c44',art:'coffee'}
 ];
 function teeArt(t){ const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d'); g.clearRect(0,0,256,256); g.strokeStyle=g.fillStyle=t.ink; g.lineWidth=7; g.lineCap='round'; g.lineJoin='round';
   if(t.art==='dragonfly'){ g.beginPath(); g.moveTo(128,70); g.lineTo(128,200); g.stroke(); g.beginPath(); g.arc(128,62,12,0,Math.PI*2); g.fill(); for(const [dy,s] of [[92,1],[92,-1],[120,1],[120,-1]]){ g.beginPath(); g.ellipse(128+s*48,dy,44,14,s*-.15,0,Math.PI*2); g.stroke(); } }
   else if(t.art==='moon'){ g.beginPath(); g.arc(128,120,58,0,Math.PI*2); g.fill(); g.fillStyle=t.col; g.beginPath(); g.arc(152,104,52,0,Math.PI*2); g.fill(); g.fillStyle=t.ink; for(const [x,y,r] of [[200,60,6],[64,190,5],[196,190,4],[60,70,4]]){ g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); } g.font='bold 30px Nunito, sans-serif'; g.textAlign='center'; g.fillText('& BACK ×16',128,232); }
   else if(t.art==='lista'){ g.font='bold 54px Gaegu, cursive'; g.textAlign='center'; g.fillText('lista',128,100); g.fillText('barista?',128,160); g.lineWidth=5; g.strokeRect(96,180,64,44); g.beginPath(); g.arc(166,202,12,-1.4,1.4); g.stroke(); }
+  else if(t.art==='kitty'){ g.beginPath(); g.arc(128,118,56,0,Math.PI*2); g.stroke(); g.beginPath(); g.moveTo(80,90); g.lineTo(84,40); g.lineTo(112,66); g.moveTo(176,90); g.lineTo(172,40); g.lineTo(144,66); g.stroke(); g.beginPath(); g.arc(108,112,7,0,Math.PI*2); g.arc(148,112,7,0,Math.PI*2); g.fill(); g.beginPath(); g.moveTo(122,130); g.lineTo(134,130); g.lineTo(128,138); g.closePath(); g.fill(); g.lineWidth=4; for(const s2 of [-1,1]) for(const dy of [-6,6]){ g.beginPath(); g.moveTo(128+s2*24,134+dy*.4); g.lineTo(128+s2*70,128+dy); g.stroke(); } g.font='bold 30px Nunito, sans-serif'; g.textAlign='center'; g.fillText('KITTY CLUB',128,215); }
+  else if(t.art==='coffee'){ g.lineWidth=7; g.beginPath(); g.moveTo(84,100); g.lineTo(96,190); g.lineTo(160,190); g.lineTo(172,100); g.closePath(); g.stroke(); g.beginPath(); g.moveTo(78,100); g.lineTo(178,100); g.stroke(); g.beginPath(); g.arc(172,140,16,-1.3,1.3); g.stroke(); g.lineWidth=5; for(const x of [108,128,148]){ g.beginPath(); g.moveTo(x,86); g.bezierCurveTo(x-10,70,x+10,60,x,44); g.stroke(); } g.font='bold 34px Gaegu, cursive'; g.textAlign='center'; g.fillText('can we get coffee?',128,232); }
   else { g.font='bold 120px Caprasimo, Georgia, serif'; g.textAlign='center'; g.fillText('foo',128,160); g.font='bold 26px Nunito, sans-serif'; g.fillText('’s in the sky',128,210); }
   const tx=new THREE.CanvasTexture(c); tx.encoding=THREE.sRGBEncoding; tx.anisotropy=4; return tx; }
 function tattooTex(kind){ const c=document.createElement('canvas'); c.width=256; c.height=256; const g=c.getContext('2d'); g.fillStyle='#e8833a'; g.fillRect(0,0,256,256);
@@ -297,16 +313,16 @@ function makeFox(){
   const mask=mesh(new THREE.SphereGeometry(.32,12,8),white,0,-.12,.3,head); mask.scale.set(1.25,.75,.75);
   mesh(new THREE.SphereGeometry(.16,10,8),white,0,-.1,.48,head).scale.set(1,.85,1.1);
   mesh(new THREE.SphereGeometry(.06,8,6),dark,0,-.05,.64,head);
-  const ears=[];
+  const ears=[], lenses=[]; const frameMat=toon('#2b2230'); const lensMat=new THREE.MeshBasicMaterial({color:col('#2b2230'),transparent:true,opacity:.6,depthWrite:false});
   for(const s of [-1,1]){ mesh(new THREE.SphereGeometry(.062,8,6),dark,s*.18,.08,.43,head);
-    mesh(new THREE.TorusGeometry(.11,.018,6,18),dark,s*.18,.08,.47,head);
+    mesh(new THREE.TorusGeometry(.11,.018,6,18),frameMat,s*.18,.08,.47,head); lenses.push(mesh(new THREE.CircleGeometry(.1,16),lensMat,s*.18,.08,.471,head));
     const ear=new THREE.Group(); ear.position.set(s*.27,.44,-.02); ear.rotation.z=-s*.32; head.add(ear); ears.push(ear);
     mesh(new THREE.ConeGeometry(.17,.42,4),orange,0,.04,0,ear); mesh(new THREE.ConeGeometry(.09,.24,4),pink,0,0,.08,ear);
     mesh(new THREE.SphereGeometry(.07,8,6),pink,s*.32,-.12,.36,head).scale.set(1,.6,.4); }
   // piercings: three studs up the right ear, a hoop on the left
   for(let k=0;k<3;k++) mesh(new THREE.SphereGeometry(.028,8,6),metal,.1,-.12+k*.1,.06,ears[1]);
   const hoop=mesh(new THREE.TorusGeometry(.055,.012,6,16),metal,-.1,-.13,.05,ears[0]); hoop.rotation.y=Math.PI/2;
-  mesh(new THREE.CylinderGeometry(.012,.012,.14,4),dark,0,.08,.49,head).rotation.z=Math.PI/2;
+  mesh(new THREE.CylinderGeometry(.012,.012,.14,4),frameMat,0,.08,.49,head).rotation.z=Math.PI/2; lenses.forEach(l=>l.visible=false);
   const bowMat=toon('#e58aa0'); const bow=new THREE.Group(); bow.position.set(-.28,.42,.12); head.add(bow); for(const s of [-1,1]){ const c=mesh(new THREE.ConeGeometry(.1,.2,4),bowMat,s*.11,0,0,bow); c.rotation.z=s*Math.PI/2; } mesh(new THREE.SphereGeometry(.05,6,4),bowMat,0,0,0,bow);
   const tail=new THREE.Group(); tail.position.set(0,.5,-.42); body.add(tail);
   const t1=mesh(new THREE.SphereGeometry(.26,10,8),orange,0,.12,-.22,tail); t1.scale.set(1,1,1.5);
@@ -321,7 +337,23 @@ function makeFox(){
   function setTee(i){ const t=TEES[i]; teeMat.color.copy(col(t.col)); const old=decal.material.map; decal.material.map=teeArt(t); decal.material.needsUpdate=true; if(old) old.dispose(); }
   function setWeapon(w){ const W={twig:['#a8714c','#000000',.07,.85],thornblade:['#7f9a6c','#0d1f08',.1,.95],moonbramble:['#bff3ea','#2a8a80',.11,1.05]}[w]||['#a8714c','#000000',.07,.85]; bladeMat.color.copy(col(W[0])); bladeMat.emissive.copy(col(W[1])); blade.scale.set(W[2]/.09,W[3]/.95,1); blade.position.y=.15+W[3]/2; }
   function setBow(c){ bowMat.color.copy(col(c)); }
-  return {root,body,legs,arms,head,tail,sword,setTee,setWeapon,setBow};
+  // ---- hats ----
+  const hats={}; const H=(id)=>{ const g=new THREE.Group(); g.visible=false; head.add(g); hats[id]=g; return g; };
+  { const g=H('ranger'), m=toon('#7f8a52'), band=toon('#5a3a28'); const br=mesh(new THREE.CylinderGeometry(.66,.66,.04,20),m,0,.36,0,g); br.rotation.x=-.08; mesh(new THREE.CylinderGeometry(.3,.36,.3,16),m,0,.52,0,g); mesh(new THREE.CylinderGeometry(.365,.365,.07,16),band,0,.42,0,g); }
+  { const g=H('beanie'), m=toon('#a693c9'), cuff=toon('#8a74b8'); const top=mesh(new THREE.SphereGeometry(.47,16,10,0,Math.PI*2,0,Math.PI/2),m,0,.12,0,g); top.scale.set(1.02,.95,1.02); const c=mesh(new THREE.TorusGeometry(.46,.07,8,24),cuff,0,.14,0,g); c.rotation.x=Math.PI/2; mesh(new THREE.SphereGeometry(.11,10,8),toon('#fff6e9'),0,.6,0,g); }
+  { const g=H('crown'), cols=['#f2b2c0','#fff6e9','#f2c14e','#e58aa0']; const ring=mesh(new THREE.TorusGeometry(.4,.03,6,24),toon('#7f9a6c'),0,.36,0,g); ring.rotation.x=Math.PI/2; for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; mesh(new THREE.IcosahedronGeometry(.075,0),toon(cols[i%4]),Math.cos(a)*.4,.38,Math.sin(a)*.4,g); } }
+  { const g=H('witch'), m=toon('#2b2752'); mesh(new THREE.CylinderGeometry(.6,.6,.04,20),m,0,.38,0,g); const cone=mesh(new THREE.ConeGeometry(.3,.8,14),m,.04,.78,-.02,g); cone.rotation.z=-.18; mesh(new THREE.CylinderGeometry(.31,.31,.07,16),toon('#f2c14e'),0,.44,0,g); const st=mesh(new THREE.OctahedronGeometry(.07),toon('#f2c14e',{emissive:col('#5a3a08')}),.18,.6,.25,g); }
+  function setHat(id){ for(const k in hats) hats[k].visible=k===id; bow.visible=!(id==='beanie'||id==='witch'); }
+  // ---- glasses ----
+  const GL={classic:['#2b2230',null],rose:['#d9868f',null],gold:['#e8a01f','#ffd6e8',.35],sunnies:['#2b2230','#2b2230',.78]};
+  function setGlasses(id){ const g=GL[id]||GL.classic; frameMat.color.copy(col(g[0])); lenses.forEach(l=>{ l.visible=!!g[1]; if(g[1]){ l.material.color.copy(col(g[1])); l.material.opacity=g[2]; } }); }
+  // ---- backpacks ----
+  const packs={}; const PK=(id)=>{ const g=new THREE.Group(); g.position.set(0,.82,-.4); g.visible=false; body.add(g); packs[id]=g; return g; };
+  { const g=PK('kitty'), m=toon('#8e8a96'); const b=mesh(new THREE.BoxGeometry(.46,.46,.2),m,0,0,-.04,g); for(const s2 of [-1,1]){ mesh(new THREE.ConeGeometry(.08,.16,4),m,s2*.15,.28,-.04,g); mesh(new THREE.SphereGeometry(.035,6,4),toon('#2b2230'),s2*.09,.05,-.15,g); } mesh(new THREE.SphereGeometry(.03,6,4),toon('#e58aa0'),0,-.03,-.15,g); }
+  { const g=PK('book'), m=toon('#8a5a3c'); mesh(new THREE.BoxGeometry(.44,.5,.18),m,0,0,-.04,g); mesh(new THREE.BoxGeometry(.46,.2,.2),toon('#6e4530'),0,.17,-.05,g); mesh(new THREE.BoxGeometry(.06,.06,.02),toon('#f2c14e'),0,.07,-.16,g); }
+  { const g=PK('wings'), wm=new THREE.MeshBasicMaterial({color:col('#bff3ea'),transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false}); for(const s2 of [-1,1]) for(const [dy,rz] of [[.12,.35],[-.08,.15]]){ const w=new THREE.Mesh(new THREE.PlaneGeometry(.7,.16),wm); w.position.set(s2*.38,dy,-.02); w.rotation.set(0,s2*.3,s2*rz); g.add(w); } mesh(new THREE.CylinderGeometry(.05,.04,.4,6),toon('#3aa6a0'),0,0,0,g); }
+  function setPack(id){ for(const k in packs) packs[k].visible=k===id; }
+  return {root,body,legs,arms,head,tail,sword,setTee,setWeapon,setBow,setHat,setGlasses,setPack};
 }
 
 function makeCat(c){
@@ -626,8 +658,8 @@ function bountyToday(){ const dk=dayKeyL(); if(S.bounty&&S.bounty.day===dk) retu
   const pickOut=a=>a.splice(Math.floor(rnd()*a.length),1)[0];
   S.bounty={day:dk,ids:[pickOut(hs),pickOut(xs),pickOut(xs)],prog:{},done:{},seen:false}; save(); return S.bounty; }
 function bump(id,n){ const b=bountyToday(); if(!b.ids.includes(id)||b.done[id]) return; b.prog[id]=Math.min(BOUNTIES[id].goal,(b.prog[id]||0)+(n||1));
-  if(b.prog[id]>=BOUNTIES[id].goal){ b.done[id]=1; logFox({k:'bounty',id,day:b.day}); SND.fanfare(); const all=b.ids.every(i=>b.done[i]);
-    if(all) logFox({k:'bountySet',day:b.day}); setTimeout(()=>callout(all?'All 3 bounties done! +'+(BOUNTY_PAY+BOUNTY_SET)+' Fox Coins today.':'Bounty done: '+BOUNTIES[id].t+' · +'+BOUNTY_PAY+' Fox Coins',4),300); }
+  if(b.prog[id]>=BOUNTIES[id].goal){ b.done[id]=1; S.bountyTotal=(S.bountyTotal||0)+1; logFox({k:'bounty',id,day:b.day}); SND.fanfare(); const all=b.ids.every(i=>b.done[i]);
+    if(all){ S.bountySets=(S.bountySets||0)+1; logFox({k:'bountySet',day:b.day}); } setTimeout(()=>callout(all?'All 3 bounties done! +'+(BOUNTY_PAY+BOUNTY_SET)+' Fox Coins today.':'Bounty done: '+BOUNTIES[id].t+' · +'+BOUNTY_PAY+' Fox Coins',4),300); }
   save(); }
 const bountiesDone=()=>{ const b=bountyToday(); return b.ids.filter(i=>b.done[i]).length; };
 function bountyHTML(){ const b=bountyToday(); const n=bountiesDone();
@@ -674,14 +706,22 @@ const stars=r=>'<span class="stars">'+'★'.repeat(r)+'☆'.repeat(3-r)+'</span>
 const BOWS=[{name:'Pink bow',c:'#e58aa0'},{name:'Lilac bow',c:'#a693c9'},{name:'Teal bow',c:'#3aa6a0'},{name:'Gold bow',c:'#f2c14e'},{name:'Poppy bow',c:'#f0882f'}];
 const GALLERY=[
   ...TEES.map((t,i)=>({id:'tee'+i,cat:'Oversized tees',name:t.name.replace(' Tee',''),sw:t.col,ok:()=>TEE_RULES[i](),how:TEE_HOW[i],wear:()=>{ S.tee=i; fox.setTee(i); },on:()=>S.tee===i})),
-  {id:'tee?1',cat:'Oversized tees',future:true,how:'Arrives with the next hunt'},{id:'tee?2',cat:'Oversized tees',future:true,how:'A secret for later'},
+  {id:'tee?1',cat:'Oversized tees',future:true,how:'Arrives with the Mojave'},
+  ...[['none','No hat','#e9dcf2',()=>true,'Starter'],['ranger','Ranger hat','#7f8a52',()=>wins('brute')>=2,'Win 2 hunts'],['beanie','Cozy beanie','#a693c9',()=>(S.bountyTotal||0)>=3,'Finish 3 daily bounties'],['crown','Flower crown','#f2b2c0',()=>looksN()>=4,'Find 4 viewpoints'],['witch','Moon witch hat','#2b2752',()=>rank('brute')>=3,'Master the Tumblebrute ★★★']]
+    .map(([id,name,sw,ok,how])=>({id:'hat_'+id,cat:'Hats',name,sw,ok,how,wear:()=>{ S.hat=id; fox.setHat(id); },on:()=>(S.hat||'none')===id})),
+  {id:'hat?',cat:'Hats',future:true,how:'Arrives with the Mojave'},
+  ...[['classic','Classic','#2b2230',()=>true,'Starter'],['rose','Rose frames','#d9868f',()=>(S.flags.mobs||0)>=10,'Bonk 10 little monsters'],['gold','Starry gold','#e8a01f',()=>(S.bountySets||0)>=1,'Finish all 3 bounties in one day'],['sunnies','Sunnies','#3a3a44',()=>!!(S.looks&&S.looks.pond),'Find the secret pond']]
+    .map(([id,name,sw,ok,how])=>({id:'gl_'+id,cat:'Glasses',name,sw,ok,how,wear:()=>{ S.glasses=id; fox.setGlasses(id); },on:()=>(S.glasses||'classic')===id})),
+  ...[['none','No bag','#e9dcf2',()=>true,'Starter'],['kitty','Kitty backpack','#8e8a96',()=>S.kitties.includes('smoke'),'Rescue the lost kitty'],['book','Book bag','#8a5a3c',()=>!!S.met.readP1,'Read R’s first journal page'],['wings','Dragonfly wings','#7fe0d6',()=>secretsLeft()===0,'Find every canyon secret']]
+    .map(([id,name,sw,ok,how])=>({id:'pk_'+id,cat:'Backpacks',name,sw,ok,how,wear:()=>{ S.pack=id; fox.setPack(id); },on:()=>(S.pack||'none')===id})),
+  {id:'pk?',cat:'Backpacks',future:true,how:'Found out in the Wilds'},
   ...BOWS.map((b,i)=>({id:'bow'+i,cat:'Bows',name:b.name,sw:b.c,ok:()=>[true,rank('brute')>=2,!!S.hollow,rank('brute')>=3,looksN()>=LOOKS.length][i],how:['Starter','Reach ★★ Studied on the Tumblebrute','Find what Pip saw','Master the Tumblebrute ★★★','Find all 7 viewpoints'][i],wear:()=>{ S.bow=i; fox.setBow(b.c); },on:()=>(S.bow||0)===i})),
   {id:'bow?',cat:'Bows',future:true,how:'Coming with the season finale'},
   {id:'cape',cat:'Kitty gear',name:'Bramble cape',sw:'#7f9a6c',ok:()=>!!S.kittyCape,how:'Craft it at the Forge',wear:()=>{ S.capeOn=!S.capeOn; },on:()=>!!(S.kittyCape&&S.capeOn)},
   {id:'kit?',cat:'Kitty gear',future:true,how:'Coming soon'},
   ...Object.keys(DECOS).map(id=>({id:'deco_'+id,cat:'Camp decor',name:DECOS[id].name,sw:{plant:'#7f9a6c',vase:'#b9a6e0',lamp:'#5fc9b8'}[id],ok:()=>!!S.decos[id],how:{plant:'Starter',vase:'Hidden in the canyon',lamp:'Hidden in the canyon'}[id],deco:true})),
   {id:'deco?1',cat:'Camp decor',future:true,how:'Found somewhere new'},{id:'deco?2',cat:'Camp decor',future:true,how:'Found somewhere new'}];
-const seen=k=>!!(S.seen&&S.seen[k]); const markSeen=k=>{ if(!S.seen) S.seen={}; S.seen[k]=1; };
+const seen=k=>!!(S.seen&&S.seen[k])||['hat_none','gl_classic','pk_none'].includes(k); const markSeen=k=>{ if(!S.seen) S.seen={}; S.seen[k]=1; };
 function weaponCan(id){ const w=WEAPONS[id]; return !S.owned.includes(id)&&w.cost&&Object.entries(w.cost).every(([k,n])=>(S.mats[k]||0)>=n); }
 const CAPE_COST={hide:2,herb:2}; const capeCan=()=>!S.kittyCape&&Object.entries(CAPE_COST).every(([k,n])=>(S.mats[k]||0)>=n);
 const forgeNew=()=>Object.keys(WEAPONS).some(id=>weaponCan(id)||(S.owned.includes(id)&&!seen('w:'+id)))||capeCan();
@@ -719,7 +759,7 @@ function showNotes(){ const ALL=NOTES.filter(n=>!n.show||n.show()); const done=A
 
 /* =============== GAME STATE =============== */
 let mode='camp', world=null; // camp | hunt
-const fox=makeFox(); fox.root.scale.setScalar(1.2); fox.setTee(S.tee); fox.setWeapon(S.weapon); fox.setBow(BOWS[S.bow||0].c);
+const fox=makeFox(); fox.root.scale.setScalar(1.2); fox.setTee(S.tee); fox.setWeapon(S.weapon); fox.setHat(S.hat||'none'); fox.setGlasses(S.glasses||'classic'); fox.setPack(S.pack||'none'); fox.setBow(BOWS[S.bow||0].c);
 const dfly=makeDragonfly(); dfly.x=0; dfly.y=2; dfly.z=0;
 const P={x:0,z:6,ang:Math.PI,state:'idle',t:0,walkT:0,hp:100,maxhp:100,st:100,inv:0,combo:0,buf:0,hit:false,coffee:3,faints:0,rollDir:0,kx:0,kz:0};
 let team=[]; // kitty companions
@@ -1122,7 +1162,7 @@ function talk(id){
     $('sheet').querySelectorAll('[data-buff]').forEach(b=>b.onclick=()=>{ const k=b.dataset.buff; if(S.buff===k) return; if(!free) S.mats.herb=(S.mats.herb||0)-1; S.cafeUses++; S.buff=k; bump('coffee'); save(); say(k==='latte'?'Lista barista.':'Wooohooo!',2); toastSheet('Mocha','Order’s up! It lasts for your next hunt.'); }); return; }
   if(id==='forge'){ renderForge(); return; }
   if(id==='nook'){ renderLibrary(); return; }
-  if(id==='closet'){ renderCloset(); return; }
+  if(id==='closet'){ openDress(); return; }
 }
 function toastSheet(name,text){ sheet('mocha',name,'Camp café','<p class="line">'+fmt(text)+'</p>',[{t:'Thanks',fn:closeSheet}]); }
 const MAT_WHERE={thorn:'Pricklets, or carve the Tumblebrute',hide:'carve the Tumblebrute',core:'carve or capture the Tumblebrute (rare)',horn:'break its horns with front hits (rare)',herb:'Kitty Creek, Poppy Meadow, Dragonfly Pond',ore:'Moonview Ledge, Sandstone Arches, Pebble Crabs'};
@@ -1171,6 +1211,22 @@ function readGuide(id){ const r=rank(id); const parts=GUIDE[id].map((t,i)=>i<r?'
 function showPage(id){ const p=PAGES[id]; sheet('nook','A torn journal page','Found in the Hidden Hollow','<div class="page"><b style="font-family:var(--ui);font-size:12px;letter-spacing:.1em;text-transform:uppercase">'+esc(p.title)+'</b><br>'+esc(p.text)+'</div><p style="margin:0;font:700 12px/1.4 var(--ui);color:#5b4a62">Saved to your reading nook at camp.</p>',[{t:'Keep exploring',fn:()=>{ $('sheet').hidden=true; $('pad').style.display=''; }}]); }
 
 /* =============== CAMP REFRESH + DECORATING =============== */
+let dressMode=false, dressTab='Oversized tees', dressMsg='', dressDrag=null, dressCam=0;
+function openDress(){ closeSheet(); dressMode=true; dressCam=Math.atan2(camera.position.x-P.x,camera.position.z-P.z); P.ang=dressCam; P.state='idle'; $('pad').style.display='none'; document.body.classList.add('dress'); $('dressBar').hidden=false; dressMsg=''; renderDress(); SND.pop(); }
+function closeDress(){ dressMode=false; document.body.classList.remove('dress'); $('dressBar').hidden=true; $('pad').style.display=''; save(); refreshCamp(); updateHUD(); }
+function renderDress(){ const shown=GALLERY.filter(g=>!g.future&&!g.deco), have=shown.filter(g=>g.ok()).length;
+  const cats=[...new Set(GALLERY.filter(g=>!g.deco&&g.cat!=='Camp decor').map(g=>g.cat))];
+  const newIn=c=>GALLERY.some(g=>g.cat===c&&!g.future&&g.ok()&&!seen(g.id));
+  const card=g=>{ if(g.future) return '<button class="gi locked" data-g="'+g.id+'"><div class="sw">?</div>???<small>'+esc(g.how)+'</small></button>';
+    const ok=g.ok(), on=ok&&g.on&&g.on(), nw=ok&&!seen(g.id);
+    return '<button class="gi'+(ok?'':' locked')+(on?' on':'')+'" data-g="'+g.id+'">'+(nw?'<span class="badge">New</span>':'')+'<div class="sw" style="background:'+g.sw+'">'+(ok?(on?'✓':''):'🔒')+'</div>'+esc(g.name)+'<small>'+(ok?(on?'Wearing':'Tap to wear'):esc(g.how))+'</small></button>'; };
+  $('dressBar').innerHTML='<div class="dhead"><div><b>Dressing room</b><span>'+have+' of '+shown.length+' collected · drag to spin</span></div><button class="gold" id="dressDone">Done</button></div>'+
+    '<div class="dtabs">'+cats.map(c=>'<button class="'+(c===dressTab?'on':'')+'" data-tab="'+esc(c)+'">'+esc(c==='Oversized tees'?'Tees':c)+(newIn(c)?' <i></i>':'')+'</button>').join('')+'</div>'+
+    (dressMsg?'<p class="dmsg">'+fmt(dressMsg)+'</p>':'')+'<div class="gal">'+GALLERY.filter(g=>g.cat===dressTab).map(card).join('')+'</div>';
+  $('dressDone').onclick=closeDress;
+  $('dressBar').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ dressTab=b.dataset.tab; dressMsg=''; renderDress(); });
+  $('dressBar').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ const g=GALLERY.find(x=>x.id===b.dataset.g); if(g.future||!g.ok()){ dressMsg=(g.future?'Coming later: ':'🔒 How to unlock: ')+g.how; renderDress(); return; } g.wear(); dressMsg=''; save(); SND.pop(); say(pick(['Cute.','Ooh, yes.','Very me.','Wooohooo!','Okay, I look good.']),1.6); renderDress(); });
+  setTimeout(()=>{ for(const g of GALLERY) if(g.cat===dressTab&&!g.future&&g.ok()) markSeen(g.id); save(); },60); }
 let decoMode=false, decoArm=null, decoSel=null, dragging=false;
 function refreshCamp(){ if(!camp) return;
   camp.decoG.clear(); for(const p of S.placed){ const m=makeDeco(p.id); m.position.set(GRID.x0+(p.gx+.5)*GRID.cell,0,GRID.z0+(p.gz+.5)*GRID.cell); m.rotation.y=p.r*Math.PI/2; m.userData.p=p; camp.decoG.add(m); }
@@ -1234,10 +1290,10 @@ addEventListener('keydown',e=>{ KEYS[e.code]=true; if(['ArrowUp','ArrowDown','Ar
 addEventListener('keyup',e=>{ KEYS[e.code]=false; });
 const unlockAudio=()=>SND.init(); addEventListener('pointerdown',unlockAudio,{capture:true}); addEventListener('keydown',unlockAudio,{capture:true});
 addEventListener('blur',()=>{ for(const k in KEYS) KEYS[k]=false; joy=null; $('joy').style.display='none'; });
-stage.addEventListener('pointerdown',e=>{ e.preventDefault(); if(decoMode){ decoDown(e); return; } if(!$('sheet').hidden) return; if(e.pointerType==='mouse'){ actQ=true; return; }
+stage.addEventListener('pointerdown',e=>{ e.preventDefault(); if(dressMode){ dressDrag={x:e.clientX,a:P.ang}; return; } if(decoMode){ decoDown(e); return; } if(!$('sheet').hidden) return; if(e.pointerType==='mouse'){ actQ=true; return; }
   if(e.clientX<innerWidth*.55&&!joy){ joy={id:e.pointerId,ox:e.clientX,oy:e.clientY,x:e.clientX,y:e.clientY}; const j=$('joy'); j.style.display='block'; j.style.left=e.clientX+'px'; j.style.top=e.clientY+'px'; } else actQ=true; });
-addEventListener('pointermove',e=>{ if(decoMode){ decoMove(e); return; } if(joy&&e.pointerId===joy.id){ joy.x=e.clientX; joy.y=e.clientY; const dx=joy.x-joy.ox, dy=joy.y-joy.oy, m=Math.hypot(dx,dy), k=m>40?40/m:1; $('knob').style.transform='translate('+dx*k+'px,'+dy*k+'px)'; } });
-const endJoy=e=>{ dragging=false; if(decoSel) save(); if(joy&&e.pointerId===joy.id){ joy=null; $('joy').style.display='none'; $('knob').style.transform=''; } };
+addEventListener('pointermove',e=>{ if(dressMode&&dressDrag){ P.ang=dressDrag.a+(e.clientX-dressDrag.x)*.012; return; } if(decoMode){ decoMove(e); return; } if(joy&&e.pointerId===joy.id){ joy.x=e.clientX; joy.y=e.clientY; const dx=joy.x-joy.ox, dy=joy.y-joy.oy, m=Math.hypot(dx,dy), k=m>40?40/m:1; $('knob').style.transform='translate('+dx*k+'px,'+dy*k+'px)'; } });
+const endJoy=e=>{ dressDrag=null; dragging=false; if(decoSel) save(); if(joy&&e.pointerId===joy.id){ joy=null; $('joy').style.display='none'; $('knob').style.transform=''; } };
 addEventListener('pointerup',endJoy); addEventListener('pointercancel',endJoy);
 for(const [id,fn] of [['actBtn',()=>{ if(ctxNow&&(mode==='camp'||ctxNow.prio)) interactQ=true; else actQ=true; }],['rollBtn',()=>rollQ=true],['coffeeBtn',()=>coffeeQ=true]]) $(id).addEventListener('pointerdown',e=>{ e.preventDefault(); e.stopPropagation(); fn(); });
 
@@ -1254,7 +1310,7 @@ function frame(now){ const rdt=Math.min(.05,(now-last)/1000); last=now; T+=rdt; 
   let dt=rdt; if(hitStop>0){ hitStop-=rdt; dt=rdt*.08; } if(mode==='hunt'&&(!$('sheet').hidden||!$('results').hidden||cine)) dt=0;
   fleeArm=Math.max(0,fleeArm-rdt);
   ctxNow=findCtx();
-  if(!$('sheet').hidden||!$('results').hidden||decoMode||cine){ /* paused input */ actQ=rollQ=coffeeQ=interactQ=false; }
+  if(!$('sheet').hidden||!$('results').hidden||decoMode||cine||dressMode){ /* paused input */ actQ=rollQ=coffeeQ=interactQ=false; }
   updatePlayer(dt,T);
   if(mode==='hunt'){ hunt.t+=dt; updateBrute(dt,T); updateMobs(dt,T);
     if(pondFlies){ const pz=ZB.pond, sw=pondSwarm>0; pondSwarm=Math.max(0,pondSwarm-dt); pondFlies.forEach((f,i)=>{ const u=f.userData; u.a+=u.sp*dt*(sw?2.2:1); const cx=sw?P.x:pz.x, cz=sw?P.z:pz.z, r=sw?1.4+(i%3)*.7:u.r; const k=Math.min(1,dt*(sw?5:3)); f.position.x=lerp(f.position.x,cx+Math.cos(u.a)*r,k); f.position.z=lerp(f.position.z,cz+Math.sin(u.a)*r,k); f.position.y=lerp(f.position.y,(sw?groundH(P.x,P.z)+1:pz.h+.2)+u.h+Math.sin(T*2+i)*.2,k); f.rotation.y=-u.a+(u.sp>0?0:Math.PI); u.ws.forEach((w,j)=>w.rotation.x=Math.sin(T*45+j)*.6); }); }
@@ -1268,7 +1324,7 @@ function frame(now){ const rdt=Math.min(.05,(now-last)/1000); last=now; T+=rdt; 
     if(world.poiLabels) world.poiLabels.forEach(l=>l.visible=!!cine&&cine.t>2&&cine.t<cine.dur-1); }
     if(canyonFireflies) canyonFireflies.forEach(s=>{ s.material.opacity=.4+.4*Math.abs(Math.sin(T*1.5+s.userData.p)); });
   } else if(camp){ camp.flames.forEach((f,i)=>{ f.scale.set(1+Math.sin(T*9+i)*.12,1+Math.sin(T*11+i*2)*.22,1+Math.cos(T*8+i)*.12); }); camp.fl.intensity=1.5*(1+Math.sin(T*13)*.08); camp.bulbs.forEach((b,i)=>b.material.opacity=.35+.15*Math.sin(T*3+i));
-    for(const n of camp.npcs){ if(n.obj&&n.obj.head) n.obj.head.rotation.y=Math.sin(T*.7+n.x)*.25+(Math.hypot(P.x-n.x,P.z-n.z)<5?Math.atan2(P.x-n.x,P.z-n.z)-n.obj.g.rotation.y:0)*.5; n.bang.position.y=3.8+Math.sin(T*3)*.12; n.newTag.position.y=4+Math.sin(T*3+1)*.15; }
+    for(const n of camp.npcs){ if(n.obj&&n.obj.head) n.obj.head.rotation.y=Math.sin(T*.7+n.x)*.25+(Math.hypot(P.x-n.x,P.z-n.z)<5?Math.atan2(P.x-n.x,P.z-n.z)-n.obj.g.rotation.y:0)*.5; n.bang.position.y=3.8+Math.sin(T*3)*.12; n.newTag.position.y=4+Math.sin(T*3+1)*.15; if(dressMode){ n.bang.visible=false; n.newTag.visible=false; } }
     const bb=camp.petG.userData.baby; if(bb){ bb.body.scale.y=1+Math.sin(T*1.4)*.05; bb.zzz.forEach((z,i)=>{ const k=(T*.5+i/3)%1; z.position.set(1.2+k*1.2,2*2.1+.5+k*2.2,.6); z.material.opacity=1-k; }); } }
   updateKitties(dt,T); updateDF(dt,T);
   for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.life-=dt; p.s.position.x+=p.vx*dt; p.s.position.y+=p.vy*dt; p.s.position.z+=p.vz*dt; p.vy+=p.grav*dt; const k=p.life/p.max; p.s.material.opacity=Math.max(0,k)*.9; if(p.grow){ const sz=p.size*(1+(1-k)*p.grow); p.s.scale.set(sz,sz,1); } if(p.life<=0||p.sc!==world.scene){ p.sc.remove(p.s); p.s.material.dispose(); parts.splice(i,1); } }
@@ -1277,6 +1333,7 @@ function frame(now){ const rdt=Math.min(.05,(now-last)/1000); last=now; T+=rdt; 
   const py=groundH(P.x,P.z);
   let want=13; if(mode==='hunt'&&B&&!['dead','captured','roam'].includes(B.state)&&Math.hypot(B.x-P.x,B.z-P.z)<26) want=17; if(camera.aspect<1) want*=1.18; camDist=lerp(camDist,want,rdt*2);
   if(cine){ vistaCam(rdt); }
+  else if(dressMode){ const gy=groundH(P.x,P.z), d=camera.aspect<1?4.6:5.4; camPos.set(P.x+Math.sin(dressCam)*d,gy+1.55,P.z+Math.cos(dressCam)*d); camera.position.lerp(camPos,Math.min(1,rdt*5)); camLook.lerp(tmpV.set(P.x,gy+(camera.aspect<1?.15:.55),P.z),Math.min(1,rdt*6)); if(!dressDrag) P.ang=angLerp(P.ang,dressCam+Math.sin(T*.6)*.35,rdt*1.5); }
   else if(decoMode){ camPos.set(0,15,GRID.z0+GRID.nz*GRID.cell/2+7); camera.position.lerp(camPos,Math.min(1,rdt*4)); camLook.lerp(tmpV.set(0,0,GRID.z0+GRID.nz*GRID.cell/2),Math.min(1,rdt*5)); }
   else { let lx=P.x, lz=P.z-1.2; if(mode==='hunt'&&B&&!['dead','captured','roam','retreat','sleep'].includes(B.state)){ const d=Math.hypot(B.x-P.x,B.z-P.z); if(d<26){ lx=lerp(P.x,B.x,.3); lz=lerp(P.z,B.z,.3); } }
     camPos.set(lx, py+camDist*.82, lz+camDist); camera.position.lerp(camPos,Math.min(1,rdt*4)); camLook.lerp(tmpV.set(lx,py+1.1,lz),Math.min(1,rdt*6)); }
