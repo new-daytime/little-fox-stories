@@ -161,6 +161,8 @@ body.cine #pad,body.cine #side,body.cine #mini,body.cine #obj,body.cine #bars,bo
 .bty-r .bar{height:6px;border-radius:3px;background:rgba(255,246,233,.15);overflow:hidden;min-width:0;}
 .bty-r .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),#7fe0d6);}
 .bty-r em{font:900 12px/1 var(--ui);font-style:normal;color:#e9dcf2;}
+.where{display:block;margin-top:6px;font:700 11.5px/1.4 var(--ui);color:#8a6f7c;}
+.where b{color:#5b4a62;}
 #loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--night);font:400 26px/1.2 var(--display);text-align:center;padding:16px;z-index:9;}
 #loading small{display:block;font:700 18px/1.3 var(--hand);color:#e9dcf2;margin-top:6px;}
 @media (prefers-reduced-motion:reduce){#zoneToast,#callout,#bubble{transition:none}}
@@ -831,7 +833,7 @@ function damageBrute(dmg,fx,fz,player){
   if(B.shell>0){ dealt=raw*.45; B.shell-=raw*.25; if(B.shell<=60&&!B.cracked){ B.cracked=true; callout('Its shell is cracking! Keep it up!',3); } if(B.shell<=0) breakShell(); }
   else dealt=raw*1.4;
   B.hp-=dealt;
-  if(player&&B.hornHP>0){ const a=Math.atan2(fx-B.x,fz-B.z); if(angDiff(a,B.ang)<.85){ B.hornHP-=raw*.55; if(B.hornHP<=0) breakHorns(); } }
+  if(player&&B.hornHP>0){ const a=Math.atan2(fx-B.x,fz-B.z); if(angDiff(a,B.ang)<.85){ B.hornHP-=raw*.55; if(B.hornHP<=0) breakHorns(); else if(!hunt.hornTip){ hunt.hornTip=1; callout('Front hits crack its {i:horns}! Keep hitting its face for a rare horn.',4); } else if(!hunt.hornHalf&&B.hornHP<(B.angry?75:55)){ hunt.hornHalf=1; callout('Its {i:horns} are cracking! A few more front hits.',3); } } }
   B.anger+=dealt; B.flash=.12; B.squash=Math.max(B.squash,.6);
   if(B.state==='roam') bruteNotice();
   checkB(); return dealt; }
@@ -1122,7 +1124,9 @@ function talk(id){
   if(id==='closet'){ renderCloset(); return; }
 }
 function toastSheet(name,text){ sheet('mocha',name,'Camp café','<p class="line">'+fmt(text)+'</p>',[{t:'Thanks',fn:closeSheet}]); }
-function needHTML(cost){ return Object.entries(cost).map(([k,n])=>{ const h=S.mats[k]||0; return '<span class="need'+(h<n?' short':'')+'">'+(h>=n?'✓ ':'')+MATS[k]+' '+h+'/'+n+'</span>'; }).join(''); }
+const MAT_WHERE={thorn:'Pricklets, or carve the Tumblebrute',hide:'carve the Tumblebrute',core:'carve or capture the Tumblebrute (rare)',horn:'break its horns with front hits (rare)',herb:'Kitty Creek, Poppy Meadow, Dragonfly Pond',ore:'Moonview Ledge, Sandstone Arches, Pebble Crabs'};
+function needHTML(cost){ const rows=Object.entries(cost).map(([k,n])=>{ const h=S.mats[k]||0; return '<span class="need'+(h<n?' short':'')+'">'+(h>=n?'✓ ':'')+MATS[k]+' '+h+'/'+n+'</span>'; }).join('');
+  const miss=Object.entries(cost).filter(([k,n])=>(S.mats[k]||0)<n).map(([k])=>'<b>'+MATS[k]+':</b> '+MAT_WHERE[k]); return rows+(miss.length?'<span class="where">Where to find: '+miss.join(' · ')+'</span>':''); }
 function renderForge(){
   const cur=WEAPONS[S.weapon].atk, MAX=24;
   const rows=Object.entries(WEAPONS).map(([id,w])=>{ const own=S.owned.includes(id), eq=S.weapon===id, can=weaponCan(id); const d=w.atk-cur;
