@@ -1,6 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta property="og:type" content="website"><meta property="og:url" content="https://new-daytime.github.io/little-fox-stories/"><meta property="og:title" content="Little Fox Stories"><meta property="og:description" content="A canyon adventure made just for you. Hunt, explore, and win real rewards."><meta property="og:image" content="https://new-daytime.github.io/little-fox-stories/art/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://new-daytime.github.io/little-fox-stories/art/og.jpg"><meta name="description" content="A canyon adventure made just for you.">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
+<script src="cloud.js"></script>
 <title>Little Fox Stories</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,6 +46,22 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .hud nav{display:flex;gap:4px;}
 .pill.help{border:0;cursor:pointer;justify-content:center;min-width:34px;padding:6px 0;font:900 15px/1 var(--ui);color:#2b2230;background:var(--gold);}
 .pill.help:hover{filter:brightness(1.08);}
+.pill.cloud{border:0;cursor:pointer;position:relative;justify-content:center;min-width:34px;padding:6px 0;font:900 15px/1 var(--ui);color:#fff6e9;background:rgba(255,246,233,.14);}
+.pill.cloud i{position:absolute;right:3px;top:3px;width:8px;height:8px;border-radius:50%;background:#e0607a;}
+.pill.cloud.on i{background:#5fd39a;}
+.cloudcard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border-radius:14px;background:linear-gradient(135deg,#3aa6a0,#2f8f8a);color:#fff;text-decoration:none;cursor:pointer;border:0;text-align:left;font:inherit;}
+.cloudcard .ic{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.18);display:grid;place-items:center;font-size:24px;}
+.cloudcard b{display:block;font:900 15px/1.2 var(--ui);}
+.cloudcard span{display:block;font:700 12.5px/1.35 var(--ui);color:#e3fbf7;margin-top:2px;}
+.fld{display:flex;flex-direction:column;gap:6px;}
+.fld label{font:800 12px/1 var(--ui);color:#5b4a62;}
+.fld input{font:800 18px/1 var(--ui);padding:12px;border-radius:12px;border:2px solid var(--edge);background:#fffaf2;color:var(--ink);width:100%;}
+.fld input.pin{letter-spacing:.5em;text-align:center;font-size:22px;}
+.err{margin:0;font:800 13px/1.35 var(--ui);color:#c8506e;}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.pick button{display:flex;flex-direction:column;gap:4px;align-items:flex-start;padding:12px;border-radius:12px;background:#fffaf2;border:2px solid var(--edge);color:var(--ink);box-shadow:none;text-align:left;font:800 13px/1.3 var(--ui);}
+.pick button b{font:400 18px/1.1 var(--display);}
+.linkbtn{background:none;border:0;padding:0;font:800 13px/1.3 var(--ui);color:#a0573a;text-decoration:underline;box-shadow:none;cursor:pointer;}
 .hud nav a{color:#e9dcf2;text-decoration:none;font:800 12px/1 var(--ui);padding:8px 10px;border-radius:999px;}
 .hud nav a:hover,.hud nav a:focus-visible{background:rgba(255,246,233,.14);color:#fff;}
 @media (max-width:720px){.hud nav{display:none}.pill{font-size:14px;padding:6px 9px 6px 7px}}
@@ -323,6 +340,7 @@ footer{color:#fff1e2;font:400 22px/1.2 var(--hand);text-align:center;}
     <nav aria-label="Sections"><a href="#play">Play</a><a href="#quests">Quests</a><a href="#season">Season</a><a href="#shop">Gift Shop</a><a href="#mine">My rewards</a></nav>
     <span class="pill" title="Fox Coins"><svg class="coin"><use href="#i-coin"/></svg><span id="hudCoins">0</span></span>
     <span class="pill shard" title="Moon Shards"><svg class="coin"><use href="#i-shard"/></svg><span id="hudShards">0/16</span></span>
+    <button class="pill cloud" id="cloudBtn" type="button" hidden aria-label="Cloud save">☁<i id="cloudDot"></i></button>
     <button class="pill help" id="helpBtn" type="button" aria-label="How it works" title="How it works">?</button>
   </div>
 </header>
@@ -684,7 +702,8 @@ function tagHTML(t){ return '<span class="tag"><svg class="coin" style="width:13
 function renderTop(){
   const name=p.name||'Little Fox'; const h=new Date().getHours();
   $('hello').textContent=(h<12?'Good morning, ':h<18?'Hey, ':'Evening, ')+name;
-  $('todo').innerHTML='<p class="tdh">Things to do</p>'+todoItems().map(todoHTML).join('')+todayHTML();
+  const fc=window.FoxCloud, cloudAsk=fc&&fc.status==='signedout';
+  $('todo').innerHTML='<p class="tdh">Things to do</p>'+(cloudAsk?'<button class="cloudcard" id="cloudCard" type="button"><div class="ic">☁</div><div><b>Save your progress</b><span>Pick a hunter name + PIN to play on any device, like your iPad.</span></div><span class="arr" aria-hidden="true">›</span></button>':'')+todoItems().map(todoHTML).join('')+todayHTML(); if($('cloudCard')) $('cloudCard').onclick=()=>cloudCreate();
   const days=(5-new Date().getDay()+7)%7; $('dropsText').textContent=days===0?'New stuff drops today!':'New stuff in '+days+' day'+(days>1?'s':'')+' · Friday';
 }
 function renderQuests(){
@@ -770,6 +789,42 @@ const TOUR=[
   {t:'New stuff every Friday',b:'New chapters drop on Fridays, and weekly quests reset. Check “Things to do” at the top any time you’re not sure what to do. Tap the ? button up top to see this tour again.'},
   {t:'A quick note',b:'This game shares basic gameplay info with Friendship 7, like what you played and how far you got, to help make the game better. Nothing else.'}];
 $('helpBtn').onclick=()=>tour(0);
+/* ---------- cloud save screens ---------- */
+function cloudErr(e){ const c=(e&&e.code)||''; if(c==='short') return 'Hunter names need at least 3 letters or numbers.'; if(c.includes('email-already-in-use')) return 'That hunter name is taken. Try another one, or sign in.'; if(c.includes('invalid-credential')||c.includes('wrong-password')||c.includes('user-not-found')||c.includes('invalid-login')) return 'That name and PIN don’t match.'; if(c.includes('too-many-requests')) return 'Too many tries. Wait a minute and try again.'; if(c.includes('network')) return 'Can’t reach the save server. Check your internet.'; return 'Something went wrong. Try again.'; }
+const pinOk=v=>/^[0-9]{4}$/.test(v);
+function cloudCreate(){ openModal('<p class="eyebrow" style="color:#a0573a">Cloud save</p><h2 id="mTitle">Save your progress</h2>'+guide('Pick a hunter name and a 4-digit PIN. Use them on any device to keep playing where you left off.')+
+  '<div class="fld"><label for="cName">Hunter name</label><input id="cName" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc((p.name||'').replace(/[^A-Za-z0-9]/g,''))+'"></div>'+
+  '<div class="fld"><label for="cPin">4-digit PIN</label><input id="cPin" class="pin" inputmode="numeric" maxlength="4" autocomplete="off" type="password"></div>'+
+  '<div class="fld"><label for="cPin2">Type the PIN again</label><input id="cPin2" class="pin" inputmode="numeric" maxlength="4" autocomplete="off" type="password"></div>'+
+  '<p class="err" id="cErr"></p><p class="small-note">Remember your PIN. If you forget it, Friendship 7 can reset it.</p>'+
+  '<div class="sheet-btns"><button class="ghost" id="cHave">I already have one</button><button class="gold" id="cGo">Save my progress</button></div>');
+  $('cHave').onclick=cloudSignIn;
+  $('cGo').onclick=async()=>{ const n=$('cName').value.trim(), a=$('cPin').value, b=$('cPin2').value; if(!pinOk(a)){ $('cErr').textContent='The PIN needs to be 4 numbers.'; return; } if(a!==b){ $('cErr').textContent='The two PINs don’t match.'; return; }
+    $('cGo').disabled=true; $('cGo').textContent='Saving…';
+    try{ const nm=await window.FoxCloud.create(n,a); p.cloudAsked=true; save(); openModal('<p class="eyebrow" style="color:#a0573a">Cloud save</p><h2 id="mTitle">You’re all set!</h2>'+guide('Your progress is saved as <b>'+esc(nm)+'</b>. On another device, tap ☁ and “I already have one.”'.replace(/<\/?b>/g,''))+'<div class="sheet-btns"><button class="gold" id="cOk">Yay</button></div>'); $('cOk').onclick=()=>{ closeModal(); renderAll(); }; }
+    catch(e){ $('cErr').textContent=cloudErr(e); $('cGo').disabled=false; $('cGo').textContent='Save my progress'; } }; }
+function cloudSignIn(){ openModal('<p class="eyebrow" style="color:#a0573a">Cloud save</p><h2 id="mTitle">Welcome back</h2>'+guide('Type your hunter name and PIN to load your progress on this device.')+
+  '<div class="fld"><label for="sName">Hunter name</label><input id="sName" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false"></div>'+
+  '<div class="fld"><label for="sPin">PIN</label><input id="sPin" class="pin" inputmode="numeric" maxlength="4" autocomplete="off" type="password"></div>'+
+  '<p class="err" id="sErr"></p><div class="sheet-btns"><button class="ghost" id="sBack">New save instead</button><button class="gold" id="sGo">Load my progress</button></div>');
+  $('sBack').onclick=cloudCreate;
+  $('sGo').onclick=async()=>{ const n=$('sName').value.trim(), a=$('sPin').value; if(!pinOk(a)){ $('sErr').textContent='The PIN is 4 numbers.'; return; }
+    $('sGo').disabled=true; $('sGo').textContent='Loading…';
+    try{ const r=await window.FoxCloud.signIn(n,a); p.cloudAsked=true; LS.set('foxProfile',Object.assign(LS.get('foxProfile',{}),{cloudAsked:true}));
+      if(r.reload){ location.reload(); return; }
+      if(r.done){ closeModal(); renderAll(); toast('Signed in. Your progress is synced.'); return; }
+      const card=(t,x,id)=>'<button id="'+id+'"><b>'+t+'</b>Level '+x.level+' · '+x.coins+' coins<br>'+x.wins+' hunt win'+(x.wins===1?'':'s')+'</button>';
+      openModal('<p class="eyebrow" style="color:#a0573a">Cloud save</p><h2 id="mTitle">Which save do you want?</h2>'+guide('This device has its own progress. Pick the one to keep. The other one goes away.')+'<div class="pick">'+card('Cloud save',r.cloud,'pCloud')+card('This device',r.local,'pLocal')+'</div>');
+      $('pCloud').onclick=async()=>{ await r.useCloud(); location.reload(); }; $('pLocal').onclick=async()=>{ await r.useLocal(); closeModal(); renderAll(); toast('Saved this device’s progress to the cloud.'); }; }
+    catch(e){ $('sErr').textContent=cloudErr(e); $('sGo').disabled=false; $('sGo').textContent='Load my progress'; } }; }
+function cloudAccount(){ const C=window.FoxCloud; if(!C.on){ cloudCreate(); return; } const ago=C.lastSync?Math.max(0,Math.round((Date.now()-C.lastSync)/60000)):null;
+  openModal('<p class="eyebrow" style="color:#a0573a">Cloud save</p><h2 id="mTitle">Saved as '+esc(C.name)+'</h2>'+guide(C.status==='error'?'Couldn’t sync just now. It’ll try again in a moment.':'Your progress syncs automatically'+(ago!=null?' · last saved '+(ago<1?'just now':ago+' min ago'):'')+'. Use your hunter name and PIN on any other device.')+
+    '<div class="sheet-btns"><button class="ghost" id="aOut">Sign out</button><button class="gold" id="aOk">OK</button></div>');
+  $('aOk').onclick=closeModal; $('aOut').onclick=async()=>{ await C.signOut(); closeModal(); renderAll(); toast('Signed out. Your save is safe in the cloud.'); }; }
+$('cloudBtn').onclick=cloudAccount;
+if(window.FoxCloud&&window.FoxCloud.status!=='off'){ $('cloudBtn').hidden=false;
+  window.FoxCloud.onChange(C=>{ $('cloudBtn').hidden=C.status==='off'; $('cloudBtn').classList.toggle('on',!!C.on); renderTop();
+    if(C.status==='signedout'&&!p.cloudAsked&&p.toured&&modal.hidden&&window.FoxCloud.hasLocalProgress()){ p.cloudAsked=true; save(); setTimeout(()=>{ if(modal.hidden) cloudCreate(); },600); } }); }
 function tour(i,then){ i=i||0; const s=TOUR[i];
   openModal('<p class="eyebrow" style="color:#a0573a">Camp tour · '+(i+1)+' of '+TOUR.length+'</p><h2 id="mTitle">'+esc(s.t.replace('{name}',p.name||'hunter'))+'</h2>'+guide(esc(s.b))+'<div class="dots">'+TOUR.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join('')+'</div><div class="sheet-btns">'+(i?'<button class="ghost" id="tBack">Back</button>':'')+'<button id="tNext">'+(i<TOUR.length-1?'Next':'Let’s go')+'</button></div>');
   if(i) $('tBack').onclick=()=>tour(i-1,then);
