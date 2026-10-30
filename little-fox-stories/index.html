@@ -763,7 +763,7 @@ const TOUR=[
   {t:'The Gift Shop is real',b:'Spend coins on real Starbucks cards and Apple Pay cash. Some rewards you win free just by hitting milestones. You can claim a little every day. Tap Claim and it goes straight to Friendship 7. He’ll pay up.'},
   {t:'16 Moon Shards',b:'Hidden across every story and hunt. Find all 16 for the legendary Moon Prize: $1,000. It will take a while. That’s the point.'},
   {t:'Keep it safe',b:'Your progress lives on this phone. Now and then I’ll remind you to copy a save code. Paste it in your Notes app and nothing gets lost.'},
-  {t:'New stuff every Friday',b:'New chapters drop on Fridays, and weekly quests reset. Check “Things to do” at the top any time you’re not sure what to do. Tap the ? button up top to see this tour again.'}];
+  {t:'New stuff every Friday',b:'New chapters drop on Fridays, and weekly quests reset. Check “Things to do” at the top any time you’re not sure what to do. Tap the ? button up top to see this tour again. (Friendship 7 gets a little note when you play, so he knows when to make new chapters.)'}];
 $('helpBtn').onclick=()=>tour(0);
 function tour(i,then){ i=i||0; const s=TOUR[i];
   openModal('<p class="eyebrow" style="color:#a0573a">Camp tour · '+(i+1)+' of '+TOUR.length+'</p><h2 id="mTitle">'+esc(s.t.replace('{name}',p.name||'hunter'))+'</h2>'+guide(esc(s.b))+'<div class="dots">'+TOUR.map((_,k)=>'<i class="'+(k===i?'on':'')+'"></i>').join('')+'</div><div class="sheet-btns">'+(i?'<button class="ghost" id="tBack">Back</button>':'')+'<button id="tNext">'+(i<TOUR.length-1?'Next':'Let’s go')+'</button></div>');
@@ -820,6 +820,22 @@ $('tourBtn').onclick=()=>tour(0);
 
 /* ---------- boot ---------- */
 ingest(); renderAll();
+/* ---------- progress note to Friendship 7 (quiet, at most every 20 min, only on the hosted site) ---------- */
+const LOG_TOPIC='foxlog-7ofj824n9qnjca';
+function progressNote(){ if(!NOTIFY_URL) return; const last=p.lastNote||0; if(Date.now()-last<20*60e3) return;
+  const ev=LS.get('foxEvents',[]).filter(e=>e.t>last); if(!ev.length&&last) return;
+  const hunts=ev.filter(e=>e.k==='hunt'), stories=ev.filter(e=>e.k==='story'), crafts=ev.filter(e=>e.k==='craft');
+  const camp=LS.get('foxCampaign1',{}), views=Object.keys(camp.looks||{}).length;
+  const did=[]; if(hunts.length) did.push(hunts.length+' hunt'+(hunts.length>1?'s':'')); if(stories.length) did.push(stories.length+' sidequest'+(stories.length>1?'s':'')); if(crafts.length) did.push(crafts.length+' craft'+(crafts.length>1?'s':''));
+  const ready=MILESTONES.filter(m=>m.test(p)&&!p.milestones[m.id]).map(m=>rLabel(R(m.r)));
+  const open=SHOP.filter(x=>canClaimToday(x.r)&&!bigOnly(x.r)&&p.coins>=x.price).map(x=>rLabel(R(x.r)));
+  const sbL=Math.max(0,capFor('sb')-claimedToday('sb')), apL=Math.max(0,capFor('ap')-claimedToday('ap'));
+  const msg=(did.length?'Did: '+did.join(', '):'Just visited')+'\n'+
+    'Now: '+p.coins+' coins · Lv '+levelOf(p.xp)+' · '+shardCount()+'/16 shards · Jar $'+(p.jar||0)+' · '+views+'/7 viewpoints\n'+
+    'Left on the table today: $'+sbL+' Starbucks, $'+apL+' Apple Pay'+(ready.length?'\nFree rewards waiting: '+ready.join(', '):'')+(open.length?'\nCan afford now: '+open.join(', '):'');
+  p.lastNote=Date.now(); save();
+  fetch(NOTIFY_URL,{method:'POST',body:JSON.stringify({topic:LOG_TOPIC,title:(p.name||'Little Fox')+' played',message:msg,tags:['fox_face'],priority:2}),keepalive:true}).catch(()=>{}); }
+addEventListener('pagehide',progressNote); document.addEventListener('visibilitychange',()=>{ if(document.hidden) progressNote(); });
 if(!p.name) askName(true,()=>tour(0,()=>{ if(feed.length) showFeed(); else { p.seenUpdates=UPDATES.map(u=>u.id); save(); } }));
 else if(!p.toured) tour(0,showFeed);
 else showFeed();
