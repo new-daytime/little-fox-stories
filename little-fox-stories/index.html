@@ -82,6 +82,13 @@ button:focus-visible,.btn:focus-visible,a:focus-visible{outline:3px solid var(--
 .continue span.why{display:block;margin-top:6px;font:700 19px/1.15 var(--hand);color:#e9dcf2;}
 .continue .go{grid-column:1/-1;justify-self:start;}
 .todo{display:flex;flex-direction:column;gap:10px;padding:16px;color:var(--paper);background:linear-gradient(135deg,#3a2c44,#5c4d73);border-radius:18px;box-shadow:0 3px 0 #1d1a3a,0 22px 40px rgba(30,20,50,.4);}
+.jar{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;margin:4px 0 12px;padding:12px 14px;border-radius:12px;background:linear-gradient(135deg,#1e6b52,#2f8f6e);color:#fff6e9;}
+.jar .jarsvg{width:46px;height:58px;}
+.jar b{display:block;font:900 15px/1.2 var(--ui);margin-bottom:4px;}
+.jar span{display:block;font:700 12.5px/1.4 var(--ui);color:#e3f3ea;}
+.jar strong{font-weight:900;color:#fff;}
+.jar em{display:block;margin-top:6px;font:700 15px/1.2 var(--hand);font-style:normal;color:#ffe3a0;}
+.jar.big{margin:6px 0;} .jar.big .jarsvg{width:64px;height:80px;}
 .today{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:2px;padding:12px;border-radius:14px;background:rgba(18,14,34,.45);border:1.5px dashed rgba(242,193,78,.55);color:inherit;text-decoration:none;}
 .today b{display:block;font:900 10.5px/1 var(--ui);letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;}
 .today span{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font:800 14px/1.2 var(--ui);}
@@ -359,7 +366,7 @@ footer{color:#fff1e2;font:400 22px/1.2 var(--hand);text-align:center;}
   <section id="shop" aria-labelledby="gh">
     <div class="sec-head"><div><p class="eyebrow">Real rewards, really</p><h2 id="gh">Gift Shop</h2></div><span class="aside">Redeem, get a code, text it to Friendship 7.</span></div>
     <div class="shopwrap">
-      <div class="card panel"><h3>Spend your Fox Coins</h3><p class="sub">Starbucks cards and Apple Pay cash. Save up or cash in.</p><div class="limit" id="dailyLimit"></div><div class="items" id="shopItems"></div></div>
+      <div class="card panel"><h3>Spend your Fox Coins</h3><p class="sub">Starbucks cards and Apple Pay cash. Save up or cash in.</p><div id="jarBox"></div><div class="limit" id="dailyLimit"></div><div class="items" id="shopItems"></div></div>
       <div class="card panel"><h3>Win them free</h3><p class="sub">Hit a milestone and the reward is yours. No coins needed.</p><div class="mile" id="mileList"></div></div>
     </div>
     <div class="card legend">
@@ -525,7 +532,7 @@ const LS={get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v)
 const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const R=id=>REWARD_TYPES.find(r=>r.id===id);
-const rLabel=r=>r.kind==='sb'?'$'+r.amt+' Starbucks card':r.kind==='ap'?'$'+r.amt+' Apple Pay':'$1,000 Moon Prize';
+const rLabel=r=>r.kind==='sb'?'$'+r.amt+' Starbucks':r.kind==='ap'?'$'+r.amt+' Apple Pay':'$1,000 Moon Prize';
 function levelOf(xp){ return 1+Math.floor(Math.sqrt(xp/40)); }
 function xpFor(l){ return 40*(l-1)*(l-1); }
 function dayKey(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -592,7 +599,22 @@ function claimMsg(c){ const t=MSGS[fnv(c.code)%MSGS.length]; return t.replace('{
 function makeCode(rid){ const idx=REWARD_TYPES.findIndex(r=>r.id===rid); const serial=Math.floor(Math.random()*1048576); const chk=fnv(idx+'|'+serial+'|'+SALT)&0xFFFFF; const body=AL[idx]+enc(serial,4)+enc(chk,4); return 'FOX-'+body.slice(0,4)+'-'+body.slice(4); }
 const DAILY={sb:5,ap:40};
 const BIG_DAYS=[]; // add 'YYYY-MM-DD' dates here to open a Big Prize Day ($100 Apple Pay limit that day)
-function claimedToday(kind){ const dk=dayKey(); return p.claims.filter(c=>dayKey(new Date(c.t))===dk&&R(c.r).kind===kind).reduce((a,c)=>a+R(c.r).amt,0); }
+function claimedToday(kind){ const dk=dayKey(); let n=p.claims.filter(c=>dayKey(new Date(c.t))===dk&&R(c.r).kind===kind&&c.source!=='Coffee Jar').reduce((a,c)=>a+R(c.r).amt,0);
+  if(kind==='sb') n+=(p.jarLog||[]).filter(j=>dayKey(new Date(j.t))===dk).reduce((a,j)=>a+j.amt,0); return n; }
+/* ---------- Coffee Jar: Starbucks rewards fill a jar; every $5 becomes one real $5 card ---------- */
+const JAR_FULL=5;
+function jarInit(){ if(p.jarInit) return; p.jarInit=true; p.jar=p.jar||0; p.jarLog=p.jarLog||[];
+  const prev=p.claims.filter(c=>R(c.r).kind==='sb').reduce((a,c)=>a+R(c.r).amt,0); const r=prev%JAR_FULL; if(r){ p.jar+=JAR_FULL-r; p.jarGift=JAR_FULL-r; } save(); }
+function jarAdd(amt,src){ p.jar=(p.jar||0)+amt; (p.jarLog=p.jarLog||[]).push({amt,t:Date.now(),src}); const codes=[]; while(p.jar>=JAR_FULL){ p.jar-=JAR_FULL; codes.push(claim('sb'+JAR_FULL,'Coffee Jar')); } save(); renderAll(); showJar(amt,codes); }
+function jarSVG(v){ const f=Math.min(1,v/JAR_FULL), h=58*f; return '<svg class="jarsvg" viewBox="0 0 64 80" aria-hidden="true"><rect x="16" y="2" width="32" height="9" rx="3" fill="#8a5a3c"/><path d="M12 14h40v54a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8z" fill="rgba(255,246,233,.22)" stroke="#fff6e9" stroke-width="2.5"/><clipPath id="jc"><path d="M14 16h36v52a6 6 0 0 1-6 6H20a6 6 0 0 1-6-6z"/></clipPath><g clip-path="url(#jc)"><rect x="12" y="'+(74-h)+'" width="40" height="'+h+'" fill="#8a5a3c"/><rect x="12" y="'+(74-h)+'" width="40" height="5" fill="#d9a77a"/></g>'+(f>0?'<circle cx="24" cy="'+(76-h*.5)+'" r="2" fill="#f6e7c8" opacity=".7"/><circle cx="38" cy="'+(78-h*.7)+'" r="1.5" fill="#f6e7c8" opacity=".6"/>':'')+'</svg>'; }
+function jarHTML(ov){ const v=ov!=null?ov:(p.jar||0); return '<div class="jar">'+jarSVG(v)+'<div><b>Coffee Jar · $'+v+' of $'+JAR_FULL+'</b><span>Starbucks rewards drop in here. Every time it fills, a real <strong>$'+JAR_FULL+' Starbucks card</strong> goes out to you.</span>'+(p.jarGift&&!p.jarGiftSeen?'<em>Friendship 7 rounded up your last coffee: +$'+p.jarGift+' already in the jar.</em>':'')+'</div></div>'; }
+function showJar(amt,codes){ const full=codes.length>0;
+  openModal('<p class="eyebrow" style="color:#a0573a">Coffee Jar</p><h2 id="mTitle">'+(full?'Your jar is full!':'+$'+amt+' in your Coffee Jar')+'</h2>'+jarHTML(full?JAR_FULL:null).replace('class="jar"','class="jar big"')+
+    (full?guide((NOTIFY_URL?'A $'+JAR_FULL+' Starbucks card is on its way to Friendship 7 now.':'Copy the message and text it to Friendship 7 for your $'+JAR_FULL+' Starbucks card.'))+'<div class="bigcode">'+esc(codes[codes.length-1])+'</div><div id="sendState">'+(NOTIFY_URL?'<span class="tag light">Sending…</span>':'')+'</div>'
+          :guide('$'+(JAR_FULL-(p.jar||0))+' more and it turns into a real $'+JAR_FULL+' Starbucks card.'))+
+    '<div class="sheet-btns">'+(full&&!NOTIFY_URL?'<button class="gold" data-copymsg="'+esc(codes[codes.length-1])+'">Copy message</button>':'')+'<button id="jDone">'+(full?'Yay!':'Nice')+'</button></div>');
+  $('jDone').onclick=()=>{ if(full&&!NOTIFY_URL){ const c=p.claims.find(x=>x.code===codes[codes.length-1]); if(c){ c.sent=true; save(); } } closeModal(); renderAll(); };
+  if(full&&NOTIFY_URL){ const t=setInterval(()=>{ const c=p.claims.find(x=>x.code===codes[codes.length-1]); const st=$('sendState'); if(!c||!st){ clearInterval(t); return; } if(!c.sending){ clearInterval(t); st.innerHTML=c.sent?'<span class="tag gold">Sent to Friendship 7 ✓</span>':'<button class="gold" data-copymsg="'+esc(c.code)+'">Copy message</button>'; } },300); } }
 const bigDay=()=>BIG_DAYS.includes(dayKey());
 const capFor=kind=>kind==='sb'?DAILY.sb:(bigDay()?100:DAILY.ap);
 function bigOnly(rid){ const r=R(rid); return r.kind==='ap'&&r.amt>DAILY.ap&&!bigDay(); }
@@ -648,7 +670,7 @@ function todayHTML(){
   let line;
   if(!sbL&&!apL) line='You claimed everything for today. Nice! More opens at midnight.';
   else if(ready.length) line='You have a free reward waiting: '+rLabel(R(ready[0].r))+'. Claim it in the Gift Shop.';
-  else if(can.length) line='You can redeem a '+rLabel(R(can[can.length-1].r))+' right now with your coins.';
+  else if(can.length){ const best=can[can.length-1], rr=R(best.r); line=rr.kind==='sb'?'You can add $'+rr.amt+' to your Coffee Jar right now with your coins.':'You can redeem a '+rLabel(rr)+' right now with your coins.'; }
   else if(next) line=(next.price-p.coins)+' more coins for a '+rLabel(R(next.r))+'. A hunt or sidequest gets you there.';
   else line='Keep playing to earn more coins.';
   return '<a class="today" href="#shop"><div><b>Still up for grabs today</b><span><i class="gc sb">$'+sbL+'</i> Starbucks <i class="gc ap">$'+apL+'</i> Apple Pay</span><small>'+esc(line)+'</small></div><span class="arr" aria-hidden="true">›</span></a>'; }
@@ -686,6 +708,7 @@ function renderSeason(){
   $('seasonCount').textContent=doneN+' of '+SEASON.length+' chapters cleared';
 }
 function renderShop(){
+  jarInit(); $('jarBox').innerHTML=jarHTML(); if(p.jarGift&&!p.jarGiftSeen){ p.jarGiftSeen=true; save(); }
   const sbL=Math.max(0,capFor('sb')-claimedToday('sb')), apL=Math.max(0,capFor('ap')-claimedToday('ap'));
   $('dailyLimit').innerHTML='<b>Today you can still claim</b><span><i class="gc sb">$'+sbL+'</i> Starbucks · <i class="gc ap">$'+apL+'</i> Apple Pay</span><small>'+(bigDay()?'Today is a Big Prize Day! $100 Apple Pay is open.':'Resets at midnight. The <b>$50 and $100 Apple Pay</b> prizes are real. They open on a <b>Big Prize Day</b>, coming soon.')+'</small>';
   $('shopItems').innerHTML=SHOP.map(s=>{ const r=R(s.r), big=bigOnly(s.r), room=canClaimToday(s.r), can=p.coins>=s.price&&room&&!big, pct=Math.min(100,p.coins/s.price*100);
@@ -771,7 +794,7 @@ function showCode(code,r,source){
 function backupPrompt(){ openModal('<p class="eyebrow" style="color:#a0573a">Quick thing</p><h2 id="mTitle">Back up your progress?</h2>'+guide('Your coins, shards and rewards live on this phone. A save code lets you get them back if anything gets wiped.')+'<div class="sheet-btns"><button class="ghost" id="bkNo">Later</button><button class="gold" id="bkYes">Copy save code</button></div>'); $('bkNo').onclick=closeModal; $('bkYes').onclick=()=>{ backup(); closeModal(); }; }
 function confirmBuy(s){ const r=R(s.r);
   openModal('<p class="eyebrow" style="color:#a0573a">Gift Shop</p><h2 id="mTitle">Redeem a '+rLabel(r)+'?</h2><p>This spends '+s.price+' Fox Coins. You’ll have '+(p.coins-s.price)+' left.</p><div class="sheet-btns"><button class="ghost" id="bNo">Not yet</button><button class="gold" id="bYes">Redeem</button></div>');
-  $('bNo').onclick=closeModal; $('bYes').onclick=()=>{ if(p.coins<s.price){ closeModal(); return; } p.coins-=s.price; const code=claim(s.r,'Gift Shop'); renderAll(); showCode(code,r); };
+  $('bNo').onclick=closeModal; $('bYes').onclick=()=>{ if(p.coins<s.price){ closeModal(); return; } p.coins-=s.price; if(r.kind==='sb'){ closeModal(); jarAdd(r.amt,'Gift Shop'); return; } const code=claim(s.r,'Gift Shop'); renderAll(); showCode(code,r); };
 }
 function copyText(t,msg){ const fallback=()=>{ const ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); let ok=false; try{ ok=document.execCommand('copy'); }catch(e){} ta.remove(); toast(ok?msg:'Long-press the code to copy it'); };
   try{ navigator.clipboard.writeText(t).then(()=>toast(msg),fallback); }catch(e){ fallback(); } }
@@ -782,7 +805,7 @@ document.addEventListener('click',e=>{
   if(n){ if(n.dataset.copycode) copyText(n.dataset.copycode,'Code copied. Now text it to Friendship 7.'); if(n.dataset.copymsg){ const c=p.claims.find(x=>x.code===n.dataset.copymsg); if(c) copyText(claimMsg(c),'Message copied. Paste it in a text to Friendship 7.'); } if(n.dataset.sent){ const c=p.claims.find(x=>x.code===n.dataset.sent); if(c){ c.sent=true; save(); renderAll(); toast('Nice. He’s on it.'); } } if(n.dataset.backup) backup(); return; }
   const b=e.target.closest('[data-buy],[data-mile],[data-legend],[data-shard]'); if(!b) return;
   if(b.dataset.buy){ const it=SHOP.find(s=>s.r===b.dataset.buy); if(canClaimToday(it.r)) confirmBuy(it); }
-  if(b.dataset.mile){ const m=MILESTONES.find(x=>x.id===b.dataset.mile); if(!m.test(p)||p.milestones[m.id]||!canClaimToday(m.r)) return; p.milestones[m.id]=true; const code=claim(m.r,'Milestone: '+m.label); renderAll(); showCode(code,R(m.r)); }
+  if(b.dataset.mile){ const m=MILESTONES.find(x=>x.id===b.dataset.mile); if(!m.test(p)||p.milestones[m.id]||!canClaimToday(m.r)) return; p.milestones[m.id]=true; if(R(m.r).kind==='sb'){ jarAdd(R(m.r).amt,'Milestone: '+m.label); return; } const code=claim(m.r,'Milestone: '+m.label); renderAll(); showCode(code,R(m.r)); }
   if(b.dataset.legend){ if(shardCount()<16||p.milestones.moon) return; p.milestones.moon=true; const code=claim('moon','The Moon Prize'); renderAll(); showCode(code,R('moon')); }
   if(b.dataset.shard!==undefined){ const s=SHARDS[+b.dataset.shard]; $('shardInfo').textContent='Shard '+(+b.dataset.shard+1)+': '+s.name+(s.test(p)?' · Found!':''); }
 });
