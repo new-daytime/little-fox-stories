@@ -485,8 +485,8 @@ const REWARD_TYPES=[ // index is baked into claim codes; only append, never reor
   {id:'ap20',kind:'ap',amt:20},{id:'ap50',kind:'ap',amt:50},{id:'ap100',kind:'ap',amt:100},{id:'moon',kind:'moon',amt:1000},
   {id:'sb1',kind:'sb',amt:1},{id:'sb3',kind:'sb',amt:3},{id:'ap10',kind:'ap',amt:10}];
 const SHOP=[{r:'sb1',price:15},{r:'sb3',price:40},{r:'sb5',price:60},{r:'ap10',price:110},{r:'ap20',price:220},{r:'ap50',price:520},{r:'ap100',price:1000}];
-const PAY={huntCap:3,storyFirst:15,storyReplay:3,replayCap:5,huntFirst:40,huntRepeat:12,noRescue:10,craft:5,visit:2,streak7:15,quest:15,questSet:20,levelUp:10};
-const XP={storyFirst:60,storyReplay:15,huntFirst:150,huntRepeat:60,craft:20,visit:10,quest:50};
+const PAY={bounty:10,bountySet:15,huntCap:3,storyFirst:15,storyReplay:3,replayCap:5,huntFirst:40,huntRepeat:12,noRescue:10,craft:5,visit:2,streak7:15,quest:15,questSet:20,levelUp:10};
+const XP={bounty:25,storyFirst:60,storyReplay:15,huntFirst:150,huntRepeat:60,craft:20,visit:10,quest:50};
 const STORIES=[{id:1,name:'The Drive Up',href:'drive.html'},{id:2,name:'Van Nuys to Vegas',href:'flight.html'},{id:3,name:'Can We Get Coffee?',href:'coffee.html'},{id:4,name:'Race Day',href:'race.html'},{id:5,name:'Into the Book',href:'book.html'}];
 const HUNTS=[{id:'brute',name:'The Tumblebrute'},{id:'wyrm',name:'The Dune Wyrm'}];
 const UPDATES=[{id:'u-launch',title:'Season 1 is here',items:['A real Gift Shop: Starbucks cards and Apple Pay cash','Weekly quests that reset every Friday','16 Moon Shards to find, for a $1,000 legendary prize','Levels, XP and Fox Coins for every play']}];
@@ -563,6 +563,8 @@ function ingest(){
       else { const dk=dayKey(new Date(e.t)); p.huntDay=p.huntDay||{}; p.huntDay[dk]=(p.huntDay[dk]||0)+1; e.paid=p.huntDay[dk]<=PAY.huntCap;
         if(e.paid) earn(PAY.huntRepeat,XP.huntRepeat,'Hunted '+h.name+' again'); else earn(0,XP.huntRepeat,'Hunted '+h.name+' again · daily coin limit reached, XP still counts'); }
       if(e.faints===0){ if(!p.huntGold[e.id]) feed.push({text:'Zero kitty rescues on '+h.name+'! Moon Shard found',coins:0,big:true}); p.huntGold[e.id]=true; if(e.paid!==false) earn(PAY.noRescue,0,'No kitty rescues bonus'); } }
+    else if(e.k==='bounty'){ p.bountyPaid=p.bountyPaid||{}; const key=e.day+':'+e.id; if(!p.bountyPaid[key]){ p.bountyPaid[key]=1; earn(PAY.bounty,XP.bounty,'Daily bounty done'); } }
+    else if(e.k==='bountySet'){ p.bountyPaid=p.bountyPaid||{}; const key=e.day+':set'; if(!p.bountyPaid[key]){ p.bountyPaid[key]=1; earn(PAY.bountySet,0,'All 3 daily bounties done!',true); } }
     else if(e.k==='craft'){ if(!p.crafted[e.id]){ p.crafted[e.id]=true; earn(PAY.craft,XP.craft,'Crafted new gear at the Forge'); } }
     p.lastT=Math.max(p.lastT,e.t);
   }
@@ -651,10 +653,12 @@ function todoItems(){
   else if(!p.huntFirst.brute) L.push({big:1,eyebrow:'Main quest',title:'Hunt the Tumblebrute',why:'Your biggest payout yet. Bring coffee.',href:'canyon.html',thumb:'art/hunt.jpg'});
   else if(!p.huntGold.brute) L.push({big:1,eyebrow:'Main quest · Moon Shard',title:'Win with zero kitty rescues',why:'Roll out of the red zones. Drink coffee early.',href:'canyon.html',thumb:'art/hunt.jpg'});
   else L.push({big:1,eyebrow:'Main quest',title:'Back to the canyon',why:'Secrets, viewpoints and a meaner Tumblebrute.',href:'canyon.html',thumb:'art/hunt.jpg'});
-  // 2. something new: reward ready > weekly quest > shards
+  // 2. something new: reward ready > daily bounties > weekly quest > shards
+  const camp=LS.get('foxCampaign1',{}), dk=dayKey(), bt=camp.bounty&&camp.bounty.day===dk?camp.bounty:null, bn=bt?bt.ids.filter(i=>bt.done&&bt.done[i]).length:0;
   const ready=MILESTONES.find(m=>m.test(p)&&!p.milestones[m.id]&&canClaimToday(m.r));
   const wq=weekQuests(), wev=weekEvents(ev), wk=dayKey(weekStart()); const q=wq.find(q=>q.count(wev,p,wk)<q.goal&&q.go);
   if(ready) L.push({isNew:1,eyebrow:'You won a real reward',title:'Claim your '+rLabel(R(ready.r)),why:'“'+ready.label+'” is done. It’s yours.',href:'#shop',ico:'coin'});
+  else if(bn<3&&p.huntFirst.brute) L.push({isNew:!bt,eyebrow:'Daily bounties · '+bn+'/3',title:bt?'Finish today’s bounties':'New bounties are up',why:'Juniper has 3 quick jobs. +45 Fox Coins for all three.',href:'canyon.html',ico:'coin'});
   else if(q) L.push({eyebrow:'This week’s quest',title:q.text,why:'Finish all three this week for a bonus.',href:q.go,ico:'fly'});
   else L.push({eyebrow:'Moon Prize',title:'Find your next Moon Shard',why:'Tap a shard to see how to find it.',href:'#shop',ico:'shard'});
   // 3. sidequest
@@ -836,6 +840,9 @@ function progressNote(){ if(!NOTIFY_URL) return; const last=p.lastNote||0; if(Da
     'Left on the table today: $'+sbL+' Starbucks, $'+apL+' Apple Pay'+(ready.length?'\nFree rewards waiting: '+ready.join(', '):'')+(open.length?'\nCan afford now: '+open.join(', '):'');
   p.lastNote=Date.now(); save();
   fetch(NOTIFY_URL,{method:'POST',body:JSON.stringify({topic:LOG_TOPIC,title:(p.name||'Little Fox')+' played',message:msg,tags:['fox_face'],priority:2}),keepalive:true}).catch(()=>{}); }
+function startPing(){ if(!NOTIFY_URL) return; if(Date.now()-(p.lastStart||0)<30*60e3){ p.lastStart=Date.now(); save(); return; } p.lastStart=Date.now(); save();
+  fetch(NOTIFY_URL,{method:'POST',body:JSON.stringify({topic:LOG_TOPIC,title:(p.name||'Little Fox')+' started playing',message:'Opened the game · '+p.coins+' coins · Lv '+levelOf(p.xp),tags:['fox_face','video_game'],priority:3}),keepalive:true}).catch(()=>{}); }
+startPing(); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) startPing(); });
 addEventListener('pagehide',progressNote); document.addEventListener('visibilitychange',()=>{ if(document.hidden) progressNote(); });
 if(!p.name) askName(true,()=>tour(0,()=>{ if(feed.length) showFeed(); else { p.seenUpdates=UPDATES.map(u=>u.id); save(); } }));
 else if(!p.toured) tour(0,showFeed);
