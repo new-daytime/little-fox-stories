@@ -1141,7 +1141,7 @@ function talk(id){
     const r=rank('brute'), w=wins('brute'), b=S.hunts.brute||{clears:0,captures:0}, a=S.hunts.angry||{clears:0,captures:0};
     const nextTxt=r<3?(RANK_AT[r]-w)+' more win'+(RANK_AT[r]-w===1?'':'s')+' to '+RANKS[r+1]:'Mastered';
     bountyToday().seen=true; save(); sheet('juniper','Old Juniper','Quest board',bountyHTML()+'<div class="list">'+
-      '<div class="li"><b>The Tumblebrute '+stars(r)+'</b><span>'+RANKS[r]+' · '+w+' win'+(w===1?'':'s')+' ('+b.clears+' hunted, '+b.captures+' captured) · '+nextTxt+(b.best?' · best '+Math.floor(b.best/60)+'m '+(b.best%60)+'s':'')+'</span><button id="qGo" class="gold">Hunt</button></div>'+
+      '<div class="li"><b>The Tumblebrute '+stars(r)+'</b><span>Mastery: '+RANKS[r]+(r<3?' · win '+(RANK_AT[r]-w)+' more for '+stars(r+1)+' '+RANKS[r+1]+' ('+['','unlocks the Field Guide','unlocks its weak spots + Lilac bow','unlocks the Angry Tumblebrute + Gold bow'][r+1]+')':' · fully mastered!')+'<br>Wins: '+b.clears+' defeated · '+b.captures+' captured'+(b.captures?'':' (trap it with the kitties when it limps and a baby follows you home)')+(b.best?' · best time '+Math.floor(b.best/60)+'m '+(b.best%60)+'s':'')+'</span><button id="qGo" class="gold">Hunt</button></div>'+
       (r>=3?'<div class="li"><b>Angry Tumblebrute <span class="badge">Hard</span></b><span>Faster, meaner, better loot · won '+(a.clears+a.captures)+'</span><button id="qAngry" class="gold">Hunt</button></div>'
            :'<div class="li" style="opacity:.6"><b>??? Angry Tumblebrute</b><span>Master the Tumblebrute ★★★ to unlock</span></div>')+
       '<div class="li" style="opacity:.6"><b>Next hunt · somewhere new</b><span>Arriving soon.</span></div></div>'+
