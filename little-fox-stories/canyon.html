@@ -89,6 +89,7 @@ button:disabled{opacity:.45;cursor:default;}
 .dmsg{margin:0;padding:8px 10px;border-radius:10px;background:#2b2752;color:#fff6e9;font:800 12.5px/1.35 var(--ui);}
 #dressBar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);transform:translateX(-50%);width:min(620px,calc(100vw - 24px));max-height:46vh;overflow:auto;background:var(--paper);color:var(--ink);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 40px rgba(20,10,40,.35);z-index:6;touch-action:pan-y;}
 #dressBar>*{flex-shrink:0;}
+.rboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;background:#b07c4e;padding:14px;border-radius:10px}.rcard{background:#fff6e0;color:#3a2c44;padding:10px 11px 12px;border-radius:2px;box-shadow:0 3px 8px rgba(40,20,10,.3);transform:rotate(var(--r));font:600 13.5px/1.4 var(--story,serif);position:relative}.rcard:before{content:'';position:absolute;top:-5px;left:50%;width:10px;height:10px;border-radius:50%;background:#d9304e;transform:translateX(-50%)}.rcard small{display:block;font:900 10px/1 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:#c9604d;margin-bottom:6px}.rcard.locked{background:#e9dccb;color:#8a7a70;font-style:italic}
 .boot{background:#1e2a24;color:#9ff0c0;border-radius:10px;padding:14px;font:700 14px/1.5 ui-monospace,Menlo,monospace}.boot p{margin:0 0 8px}.boot small{opacity:.75;font-weight:500}.bbar{height:12px;border-radius:6px;background:#2f4038;overflow:hidden;margin-bottom:10px}.bbar i{display:block;height:100%;width:0;background:#7fe0b0;transition:width .25s}
 .pols{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:14px 12px;padding:4px 2px 6px}
 .pol{background:#fffaf0;border:0;border-radius:3px;padding:7px 7px 6px;box-shadow:0 3px 10px rgba(40,20,40,.22);transform:rotate(var(--r));display:flex;flex-direction:column;gap:6px;cursor:pointer;font:800 11.5px/1.2 var(--ui);color:#3a2c44;text-align:center}
@@ -867,6 +868,10 @@ function buildCamp(){
   const arc=face(new THREE.Group(),10.5,15.5); mesh(new THREE.BoxGeometry(1.4,2.3,1.1),toon('#3a2c6a'),0,1.15,0,arc); const asc=new THREE.Mesh(new THREE.PlaneGeometry(1,.8),new THREE.MeshBasicMaterial({color:col('#f2b2c0')})); asc.position.set(0,1.55,.56); arc.add(asc); mesh(new THREE.BoxGeometry(1.3,.12,.5),toon('#2b2752'),0,1,.7,arc); mesh(new THREE.CylinderGeometry(.04,.04,.25,6),toon('#2b2230'),-.3,1.15,.75,arc); mesh(new THREE.SphereGeometry(.08,8,6),toon('#e0485e'),-.3,1.3,.75,arc); for(const x of [.15,.4]) mesh(new THREE.CylinderGeometry(.07,.07,.05,8),toon(x>.3?'#7fe0d6':'#f2c14e'),x,1.08,.75,arc);
   const am=sign('ARCADE',1.4,.35,90,'#2b2752','#f2c14e'); am.position.set(0,2.45,.56); arc.add(am); const ag=glowSprite(TEX.warm,2.8,.45); ag.position.set(0,1.6,.8); arc.add(ag);
   const dP=deskW(-.9,1.6), cP=deskW(.9,1.6);
+  // the Who is R? board: corkboard, pins and red string
+  const rb=face(new THREE.Group(),9.5,-15.5); mesh(new THREE.BoxGeometry(2.6,1.8,.1),toon('#b07c4e'),0,1.7,0,rb); mesh(new THREE.BoxGeometry(2.8,2,.08),woodD,0,1.7,-.06,rb); for(const x of [-1.2,1.2]) mesh(new THREE.BoxGeometry(.1,1.6,.1),woodD,x,.8,-.05,rb);
+  const rbNotes=[]; for(let i=0;i<12;i++){ const nx=-1+(i%4)*.66, ny=2.3-Math.floor(i/4)*.55; const n=mesh(new THREE.PlaneGeometry(.42,.34),new THREE.MeshBasicMaterial({color:col('#fff6e0')}),nx,ny,.06,rb); n.rotation.z=(i%3-1)*.08; n.visible=false; rbNotes.push(n); mesh(new THREE.SphereGeometry(.03,6,4),toon('#d9304e'),nx,ny+.15,.08,rb); }
+  const rbS=sign('R ?',.7,.36,110,'#2b2230','#f6e7c8'); rbS.position.set(0,2.75,.06); rb.add(rbS);
   // labels + markers
   const npcs=[
     {id:'juniper',name:'Old Juniper',x:-5.4,z:-3.6,r:2.6,act:'Talk',obj:owl},
@@ -881,9 +886,10 @@ function buildCamp(){
     {id:'library',name:'Grand Library',x:-10.6,z:-13.7,r:2.8,act:'Open',obj:{g:lib}},
     {id:'desk',name:'To-do desk',x:dP.x,z:dP.z,r:2.2,act:'Read',obj:{g:desk}},
     {id:'computer',name:'Computer',x:cP.x,z:cP.z,r:2,act:'Use',obj:{g:desk}},
-    {id:'arcade',name:'Arcade',x:10,z:14.3,r:2.6,act:'Play',obj:{g:arc}}];
-  for(const n of npcs){ const l=label(n.name); l.position.set(n.x,n.id==='forge'||n.id==='nook'||n.id==='closet'?2.8:n.id==='photos'?3.1:n.id==='lounge'?2.2:n.id==='gate'?6.8:n.id==='library'?5.6:n.id==='desk'?3.4:n.id==='computer'?2.6:n.id==='arcade'?3.1:3,n.z); scene.add(l); n.label=l; const b=bang(); b.position.set(n.x,3.8,n.z); b.visible=false; scene.add(b); n.bang=b; const nt=newTag(); nt.position.set(n.x,4,n.z); scene.add(nt); n.newTag=nt; }
-  return {scene,env,flames,fl,fg,bulbs,npcs,books,decoG,petG,gridG,selRing,owl,pip,mocha,photos,beds,portalM,notesC,notesT,scr};
+    {id:'arcade',name:'Arcade',x:10,z:14.3,r:2.6,act:'Play',obj:{g:arc}},
+    {id:'rboard',name:'Who is R?',x:9,z:-14.4,r:2.6,act:'Look',obj:{g:rb}}];
+  for(const n of npcs){ const l=label(n.name); l.position.set(n.x,n.id==='forge'||n.id==='nook'||n.id==='closet'?2.8:n.id==='photos'?3.1:n.id==='lounge'?2.2:n.id==='gate'?6.8:n.id==='library'?5.6:n.id==='desk'?3.4:n.id==='computer'?2.6:n.id==='arcade'?3.1:n.id==='rboard'?3.3:3,n.z); scene.add(l); n.label=l; const b=bang(); b.position.set(n.x,3.8,n.z); b.visible=false; scene.add(b); n.bang=b; const nt=newTag(); nt.position.set(n.x,4,n.z); scene.add(nt); n.newTag=nt; }
+  return {scene,env,flames,fl,fg,bulbs,npcs,books,decoG,petG,gridG,selRing,owl,pip,mocha,photos,beds,portalM,notesC,notesT,scr,rbNotes};
 }
 
 /* =============== AUDIO (music moods + sfx) =============== */
@@ -1069,6 +1075,67 @@ function monsterIntro(){ if(!B||scene||window.__noScenes) return; const bk=isW()
     :[{cam:{at:'B',off:[6,3,7]},look:{at:'B',off:[0,2,0]},move:1.2,hold:1}];
   SND.roar(); shake=.35; playScene(null,null,{shots,big:BOSS_TITLE[bk]}); }
 
+/* =============== DAILY CAMP ASKS + WHO IS R? =============== */
+// Every task handed in to Juniper, Pip or Mocha reveals that character's next clue about R.
+const CLUES=[
+  {who:'mocha',t:'R always ordered two coffees. Drank both in four minutes. Then vibrated for an hour.'},
+  {who:'pip',t:'R ate like someone was going to steal his plate. Finished before I unwrapped my sandwich.'},
+  {who:'juniper',t:'Every time I asked where R was, he said “on my way.” Every single time. He was never on his way.'},
+  {who:'mocha',t:'He told the same story about a coyote three times. The coyote got bigger every time.'},
+  {who:'pip',t:'R used to leave work early on Saturdays. Said he needed to go breathe at the beach. Took someone with him every time.'},
+  {who:'juniper',t:'He’d climb to the top of the canyon and do this weird breathing thing. Whoever was with him thought it was ridiculous. She went anyway.'},
+  {who:'mocha',t:'R kept a car up on blocks for months. Said it was broken. He’d sit in it with someone and talk about all the drives they’d take.'},
+  {who:'pip',t:'He flew someone across the desert and back in one day. Didn’t even stay the night.'},
+  {who:'juniper',t:'R flew little planes. Once the door popped open in midair. He laughed about it for a week.'},
+  {who:'mocha',t:'R always said “I’m going too slow.” He was never going too slow.'},
+  {who:'pip',t:'Late at night he’d go up the mountain and just look at the lights. Never alone, though.'},
+  {who:'juniper',t:'He signed his letters with a funny name. Something about a spaceship. Friendship-something.'}];
+const WHO_NAME={juniper:'Old Juniper',pip:'Pip',mocha:'Mocha'}, WHO_ROLE={juniper:'Camp ranger',pip:'Map maker',mocha:'Camp café'};
+function nextClue(who){ const got=S.clues||[]; return CLUES.findIndex((c,i)=>c.who===who&&!got.includes(i)); }
+function revealClue(who){ const i=nextClue(who); if(i<0) return null; (S.clues||(S.clues=[])).push(i); save(); return CLUES[i]; }
+const dayKey=()=>new Date().toDateString(), weekN=()=>Math.floor((Date.now()/864e5+3)/7);
+// weekly café special + pop-up item
+const SPECIALS=[{n:'Pumpkin spice cold brew',d:'{s:+15 max HP} and {s:+8% attack}'},{n:'Lavender honey latte',d:'{s:+15 max HP} and {s:+8% attack}'},{n:'Horchata iced coffee',d:'{s:+15 max HP} and {s:+8% attack}'},{n:'Brown sugar oat shaken espresso',d:'{s:+15 max HP} and {s:+8% attack}'}];
+const special=()=>SPECIALS[weekN()%SPECIALS.length];
+function popupItem(){ const w=weekN(); if(S.popupPick&&S.popupPick.w===w) return GALLERY.find(g=>g.id===S.popupPick.id)||null; const pool=GALLERY.filter(g=>!g.future&&!g.deco&&g.id!=='cape'&&!g.ok()&&!(S.popup||[]).includes(g.id)); const it=pool.length?pool[w%pool.length]:null; S.popupPick={w,id:it&&it.id}; return it; }
+// ---- today's asks ----
+const J_ASKS={
+  wonder:{t:'Go see tonight’s wonder in the Wilds.',ok:()=>!!((S.wilds||{}).daily||{})[dayKey()]},
+  pet:{t:'Go say hi to your baby in the Pet Lounge. It misses you.',ok:()=>S.loungeDay===dayKey(),need:()=>S.pets.length>0},
+  hunt:{t:'Win one hunt today. Any monster.',ok:()=>S.winDay===dayKey()},
+  read:{t:'Read something in your reading nook. Stories keep the moon calm.',ok:()=>S.nookDay===dayKey()},
+  view:{t:'Find a viewpoint or wonder you haven’t seen yet.',ok:()=>S.newViewDay===dayKey(),need:()=>LOOKS.concat(WONDERS).some(l=>!(S.looks||{})[l.id])},
+  stones:{t:'Read a story stone in the Wilds you haven’t found.',ok:()=>S.stoneDay===dayKey(),need:()=>STONES.some(x=>!(((S.wilds||{}).stones)||{})[x.id])}};
+const M_ASKS={
+  special:{t:()=>'Try this week’s special: the '+special().n+'.',ok:()=>S.specialWeek===weekN(),need:()=>S.specialWeek!==weekN()},
+  popup:{t:()=>'My pop-up shop has the '+(popupItem()||{name:'mystery item'}).name+' this week only. Come look.',ok:()=>S.popupWeek===weekN(),need:()=>!!popupItem()&&S.popupWeek!==weekN()},
+  beans:{t:'Bring me 2 herbs (Creek Herb or Desert Sage). I’m inventing a recipe.',ok:()=>((S.mats.herb||0)+(S.mats.sage||0))>=2,hand:()=>{ for(let i=0;i<2;i++){ if((S.mats.herb||0)>0) S.mats.herb--; else S.mats.sage--; } }},
+  sit:{t:'Sit with me a minute. You’ve been running around all week.',ok:()=>true}};
+function todaysAsks(){ const dk=dayKey(); if(!S.ask||S.ask.day!==dk){ const prev=S.ask||{}; const seed=Math.floor(Date.now()/864e5);
+    const jp=Object.keys(J_ASKS).filter(k=>(!J_ASKS[k].need||J_ASKS[k].need())&&!(k==='hunt'&&prev.j&&prev.j.id==='hunt'));
+    const mp=Object.keys(M_ASKS).filter(k=>!M_ASKS[k].need||M_ASKS[k].need()).filter(k=>k!=='sit'||Math.random()<.3);
+    S.ask={day:dk,j:{id:jp[seed%jp.length],st:'open'},m:{id:(mp.length?mp:['beans'])[seed%(mp.length||1)],st:'open'}}; save(); }
+  return S.ask; }
+const askText=(who)=>{ const a=todaysAsks()[who==='juniper'?'j':'m'], D=(who==='juniper'?J_ASKS:M_ASKS)[a.id]; return typeof D.t==='function'?D.t():D.t; };
+const askReady=(who)=>{ const a=todaysAsks()[who==='juniper'?'j':'m']; if(a.st==='done') return false; const D=(who==='juniper'?J_ASKS:M_ASKS)[a.id]; return D.ok(); };
+const askDone=(who)=>todaysAsks()[who==='juniper'?'j':'m'].st==='done';
+// hand an ask in: returns dialogue lines (with the clue) or null
+function handInAsk(who){ if(!askReady(who)) return null; const a=todaysAsks()[who==='juniper'?'j':'m'], D=(who==='juniper'?J_ASKS:M_ASKS)[a.id]; if(D.hand) D.hand(); a.st='done';
+  S.coinsBonus=(S.coinsBonus||0)+1; logFox({k:'ask',id:who+':'+a.id}); bump('pip'); const c=revealClue(who); save(); SND.fanfare();
+  const L=[[who,WHO_NAME[who],WHO_ROLE[who],pick(['You did it. Thank you, really.','Look at you, getting things done.','Perfect. Okay, sit. I remembered something.'])]];
+  if(c) L.push([who,WHO_NAME[who],WHO_ROLE[who],'About R… '+c.t]);
+  return {L,key:c?['Pinned to the {s:Who is R?} board at camp','{s:'+(S.clues||[]).length+' of '+CLUES.length+'} clues found']:['Today’s ask from '+WHO_NAME[who]+': done']}; }
+// ---- the Who is R? board ----
+function renderRBoard(){ const got=S.clues||[]; S.met.rboard=1; save();
+  const cards=CLUES.map((c,i)=>got.includes(i)?'<div class="rcard" style="--r:'+[-2,1.5,-1,2,-1.5,1][i%6]+'deg"><small>'+esc(WHO_NAME[c.who])+' said</small>'+esc(c.t)+'</div>':'<div class="rcard locked" style="--r:'+[1,-2,1.5,-1,2,-1.5][i%6]+'deg"><small>Clue '+(i+1)+'</small>Finish a task for '+esc(WHO_NAME[c.who])+' to hear more.</div>').join('');
+  sheet('rboard','Who is R?',got.length+' of '+CLUES.length+' clues','<p class="line">'+fmt(got.length?'Red string, push pins, and a lot of questions. Every task you finish for {n:Juniper}, {n:Pip} or {n:Mocha} adds a clue.':'An empty corkboard with one word at the top: {s:R}. Help out around camp and people will start remembering things.')+'</p><div class="rboard">'+cards+'</div>',[{t:'Close',cls:'alt',fn:closeSheet}]); }
+// ---- sidequest questions for Pip ----
+const QUIZ=[{sq:'race',name:'Race Day',q:'How does Race Day end?',a:['“I’ll watch,” she said. Then she won.','“I’ll watch,” she said. Then she fell asleep.','“I’ll drive,” she said. Then she crashed.']},
+  {sq:'flight',name:'Van Nuys to Vegas',q:'What does the last line of the flight say?',a:['Admit it, you’d fly with me again.','Admit it, you’d drive with me again.','Admit it, you’d never fly again.']},
+  {sq:'coffee',name:'Can We Get Coffee?',q:'How does Can We Get Coffee? end?',a:['Outside survived. Book reopened. Perfect day.','Coffee spilled. Book lost. Rough day.','Never went outside. Perfect day.']},
+  {sq:'drive',name:'The Drive Up',q:'What does The Drive Up say at the end?',a:['Admit it. You kind of love the canyon.','Admit it. You kind of love the beach.','Admit it. You kind of love the city.']},
+  {sq:'book',name:'Into the Book',q:'How does Into the Book end?',a:['Best adventure ever, and she never had to go outside. (Mostly.)','Best adventure ever, and the dragon came home with her.','Best adventure ever, and she went outside every day.']}];
+
 /* =============== TEXT, MASTERY, COSMETICS =============== */
 const ICON={p:'<svg viewBox="0 0 12 12"><path d="M6 1a3.5 3.5 0 0 1 3.5 3.5C9.5 7 6 11 6 11S2.5 7 2.5 4.5A3.5 3.5 0 0 1 6 1z" fill="currentColor"/><circle cx="6" cy="4.5" r="1.3" fill="#fff"/></svg>',
   m:'<svg viewBox="0 0 12 12"><circle cx="6" cy="7.6" r="2.6" fill="currentColor"/><circle cx="2.4" cy="4.8" r="1.2" fill="currentColor"/><circle cx="4.5" cy="2.6" r="1.2" fill="currentColor"/><circle cx="7.5" cy="2.6" r="1.2" fill="currentColor"/><circle cx="9.6" cy="4.8" r="1.2" fill="currentColor"/></svg>',
@@ -1101,6 +1168,7 @@ const GALLERY=[
   {id:'kit?',cat:'Kitty gear',future:true,how:'Coming soon'},
   ...Object.keys(DECOS).map(id=>({id:'deco_'+id,cat:'Camp decor',name:DECOS[id].name,sw:{plant:'#7f9a6c',vase:'#b9a6e0',lamp:'#5fc9b8'}[id],ok:()=>!!S.decos[id],how:{plant:'Starter',vase:'Hidden in the canyon',lamp:'Hidden in the canyon'}[id],deco:true})),
   {id:'deco?1',cat:'Camp decor',future:true,how:'Found somewhere new'},{id:'deco?2',cat:'Camp decor',future:true,how:'Found somewhere new'}];
+GALLERY.forEach(g=>{ if(g.ok){ const o=g.ok; g.ok=()=>o()||(S.popup||[]).includes(g.id); } });
 const seen=k=>!!(S.seen&&S.seen[k])||['hat_none','gl_classic','pk_none'].includes(k); const markSeen=k=>{ if(!S.seen) S.seen={}; S.seen[k]=1; };
 function weaponCan(id){ const w=WEAPONS[id]; return !S.owned.includes(id)&&w.cost&&Object.entries(w.cost).every(([k,n])=>(S.mats[k]||0)>=n); }
 const CAPE_COST={hide:2,herb:2}; const capeCan=()=>!S.kittyCape&&Object.entries(CAPE_COST).every(([k,n])=>(S.mats[k]||0)>=n);
@@ -1185,7 +1253,7 @@ function startHunt(variant){
     setScene('hunt',RG);
     const buff=S.buff; S.buff=null; save();
     hunt={variant,t:0,tracks:0,noticed:false,retreated:false,phase:'tracks',carves:0,gained:[],finds:[],buff,zone:null,seen:{},kittyGift:false,done:false,shellBroke:false,hornsBroke:false};
-    P.maxhp=100+(buff==='latte'?25:0); P.hp=P.maxhp; P.st=100; P.coffee=3; P.faints=0; P.state='idle'; P.inv=0;
+    P.maxhp=100+(buff==='latte'?25:buff==='special'?15:0); P.hp=P.maxhp; P.st=100; P.coffee=3; P.faints=0; P.state='idle'; P.inv=0;
     P.x=0; P.z=8; P.ang=Math.PI; P.downDone=false;
     // monster
     if(brute) world.scene.remove(brute.root);
@@ -1246,7 +1314,7 @@ function endHunt(result){
   const h=S.hunts[v]||(S.hunts[v]={clears:0,captures:0,best:0});
   const gained=hunt.gained.slice(); if(v==='angry'&&result!=='failed') gained.push('horn','core'); if(hunt.twist&&hunt.twist.id==='fullmoon'&&result!=='failed') gained.push('core');
   if(result==='captured'){ h.captures++; const ex=BK==='wyrm'?['scale','scale',Math.random()<.5?'fang':'sungem']:['thorn','hide',Math.random()<.5?'horn':'core']; gained.push(...ex); if(false){ hunt.finds.push('A baby Tumblebrute followed you home!'); } }
-  if(result==='hunted') h.clears++;
+  if(result==='hunted') h.clears++; if(result!=='failed') S.winDay=dayKey();
   if(result!=='failed'){ logFox({k:'hunt',id:BK,faints:P.faints,v}); bump('hunt'); if(result==='captured') bump('capture'); if(P.faints===0) bump('norescue'); if(hunt.hornsBroke) bump('horns'); }
   if(result!=='failed'){ h.best=h.best?Math.min(h.best,Math.round(hunt.t)):Math.round(hunt.t); }
   for(const g of gained) S.mats[g]=(S.mats[g]||0)+1;
@@ -1508,7 +1576,7 @@ function moveInput(){ if(botMove) return botMove;
   let x=(KEYS.KeyD||KEYS.ArrowRight?1:0)-(KEYS.KeyA||KEYS.ArrowLeft?1:0), y=(KEYS.KeyS||KEYS.ArrowDown?1:0)-(KEYS.KeyW||KEYS.ArrowUp?1:0);
   if(joy){ const dx=joy.x-joy.ox, dy=joy.y-joy.oy, m=Math.hypot(dx,dy); if(m>6){ x=dx/Math.max(m,40); y=dy/Math.max(m,40); } }
   const m=Math.hypot(x,y); if(m>1){ x/=m; y/=m; } return {x,z:y,m:Math.min(1,Math.hypot(x,y))}; }
-function weaponAtk(){ return WEAPONS[S.weapon].atk*(hunt&&hunt.buff==='thai'?1.15:1); }
+function weaponAtk(){ return WEAPONS[S.weapon].atk*(hunt&&hunt.buff==='thai'?1.15:hunt&&hunt.buff==='special'?1.08:1); }
 function swingHit(c){ if(mode!=='hunt') return; hitMobs(c); if(!B) return; const R=brute.R; const dx=B.x-P.x, dz=B.z-P.z, d=Math.hypot(dx,dz); if(B.state==='retreat'&&d>R+3) return;
   if(d<R+2.4&&angDiff(Math.atan2(dx,dz),P.ang)<1.15){ const dealt=damageBrute(weaponAtk()*COMBO[c].mult*rand(.9,1.1),P.x,P.z,true); if(dealt){ SND.hit(c===2); hitStop=c===2?.09:.05; shake=Math.max(shake,c===2?.22:.12); for(let i=0;i<8;i++) puff(P.x+dx/d*(d-R*.9),CH(P.x,P.z)+1.4,P.z+dz/d*(d-R*.9),B.shell>0?TEX.warm:TEX.teal,.35,rand(-4,4),rand(1,4),rand(-4,4),.35,-8); } } }
 let hitStop=0;
@@ -1657,7 +1725,7 @@ function doInteract(c){
     if(hunt.tracks<3){ callout('Track '+hunt.tracks+' of 3. The dragonfly is learning its scent.',3); say(hunt.tracks===1?'Question! ✋ Are these… footprints?':'Big footprints. Big foo.',2.4); } else { callout('A roar from {p:'+ZB[hunt.lair||'creek'].name+'}! The {n:dragonfly} has its scent.',4.5); say('Okay. It’s close. I can feel it.',2.6); hunt.phase='hunt'; bruteArrive(); } }
   else if(it.kind==='herb'){ const hm=REGID==='mojave'?'sage':'herb'; hunt.gained.push(hm); if(hunt.twist&&hunt.twist.id==='treasure') hunt.gained.push(hm); fadeOut(it); bump('herb'); floatTxt('+1 '+MATS[hm]); if(!S.flags.herbTip){ S.flags.herbTip=1; callout('{i:Creek Herb}: Mocha brews coffee with these.',2.5); } }
   else if(it.kind==='cherry'){ P.coffee++; fadeOut(it); bump('cherry'); floatTxt('+1 Iced coffee'); callout('Wild coffee cherries! {i:+1 iced coffee} for this hunt.',3); say('Can we get coffee? Yes we can.',2.4); }
-  else if(it.kind==='look'){ const L=LOOKS.concat(MLOOKS).find(l=>l.id===it.id); const first=!S.looks[it.id]; S.looks[it.id]=1; save(); bump('view'); if(it.m.userData.glow) it.m.userData.glow.material.opacity=.06; if(it.id==='pond') pondSwarm=12; startVista(L,first); }
+  else if(it.kind==='look'){ const L=LOOKS.concat(MLOOKS).find(l=>l.id===it.id); const first=!S.looks[it.id]; if(first) S.newViewDay=dayKey(); S.looks[it.id]=1; save(); bump('view'); if(it.m.userData.glow) it.m.userData.glow.material.opacity=.06; if(it.id==='pond') pondSwarm=12; startVista(L,first); }
   else if(it.kind==='ore'){ const om=REGID==='mojave'?'glass':'ore'; hunt.gained.push(om); if(hunt.twist&&hunt.twist.id==='treasure') hunt.gained.push(om); fadeOut(it); bump('ore'); floatTxt('+1 '+MATS[om]); if(!S.flags.oreTip){ S.flags.oreTip=1; callout('{i:Ledge Ore}: the Forge needs this.',2.5); } }
   else if(it.kind==='cache'){ const pool=REGID==='mojave'?['glass','sage','scale','spine']:['ore','herb','thorn','hide']; const a=pick(pool), b2=pick(pool); hunt.gained.push(a,b2); fadeOut(it); floatTxt('+1 '+MATS[a]+', +1 '+MATS[b2]); if(!S.flags.cacheTip){ S.flags.cacheTip=1; callout('A ridge cache! There’s one on top of every climbable ridge.',3.5); } }
   else if(it.kind==='errand'){ const E=pipErrand(); S.pip.st='got'; save(); fadeOut(it); hunt.finds.push('For Pip: '+E.item); floatTxt('Got it: '+E.item); callout('Got {i:'+E.item+'}! Bring it back to {n:Pip} at camp.',4); say(E.say,2.4); }
@@ -1669,7 +1737,7 @@ function fadeOut(it){ if(it.m){ const m=it.m; let k=1; const f=()=>{ k-=.08; m.s
 function doCarve(){ SND.hit(false); hunt.carves++; const mat=pick(isW()?['scale','scale','scale','scale','sungem']:['thorn','thorn','hide','hide','thorn','hide','core']); hunt.gained.push(mat); callout('Carved: '+MATS[mat]+' ('+hunt.carves+'/3)',2.4); for(let i=0;i<10;i++) puff(B.x,CH(B.x,B.z)+1,B.z,TEX.warm,.3,rand(-3,3),rand(2,5),rand(-3,3),.6,-8); if(hunt.carves===1) say('Sorry, buddy.',2); if(hunt.carves>=3){ hunt.phase='done'; setTimeout(()=>endHunt('hunted'),1100); } }
 
 /* =============== CAMP DIALOGUE =============== */
-const FACES={juniper:['#8a6a52','J'],pip:['#a8a0b0','P'],mocha:['#8e8a96','M'],fox:['#e8833a','✦'],forge:['#7d7486','⚒'],nook:['#8a6aa8','✎'],closet:['#a693c9','♥'],photos:['#c99a6a','✿'],lounge:['#7fae9a','☾'],desk:['#8a5a3c','✓'],computer:['#3a3a44','▣'],arcade:['#3a2c6a','★'],library:['#6e4530','❦'],wilds:['#4a3f78','✧']};
+const FACES={juniper:['#8a6a52','J'],pip:['#a8a0b0','P'],mocha:['#8e8a96','M'],fox:['#e8833a','✦'],forge:['#7d7486','⚒'],nook:['#8a6aa8','✎'],closet:['#a693c9','♥'],photos:['#c99a6a','✿'],lounge:['#7fae9a','☾'],rboard:['#c9604d','?'],desk:['#8a5a3c','✓'],computer:['#3a3a44','▣'],arcade:['#3a2c6a','★'],library:['#6e4530','❦'],wilds:['#4a3f78','✧']};
 function sheet(who,name,role,html,opts){ const s=$('sheet'); const f=FACES[who]||FACES.fox;
   s.innerHTML='<div class="who"><div class="face" style="background:'+f[0]+'">'+f[1]+'</div><div><div class="role">'+esc(role)+'</div><div class="name">'+esc(name)+'</div></div></div>'+html+'<div class="opts">'+(opts||[]).map((o,i)=>'<button data-o="'+i+'" class="'+(o.cls||'')+'"'+(o.dis?' disabled':'')+'>'+esc(o.t)+'</button>').join('')+'</div>';
   s.hidden=false; $('pad').style.display='none'; $('callout').classList.remove('on'); calloutT=0;
@@ -1677,7 +1745,7 @@ function sheet(who,name,role,html,opts){ const s=$('sheet'); const f=FACES[who]|
   const first=s.querySelector('button:not([disabled])'); if(first) first.focus({preventScroll:true}); }
 function closeSheet(){ $('sheet').hidden=true; if(!decoMode&&$('results').hidden) $('pad').style.display=''; refreshCamp(); }
 function seq(lines,end,key){ let i=0; const step=()=>{ const L=lines[i]; const last=i===lines.length-1; sheet(L[0],L[1],L[2],'<p class="line">'+fmt(L[3])+'</p>'+(last&&key?keyHTML(key):''),last?end:[{t:'Next',fn:()=>{ i++; step(); }}]); }; step(); }
-function juniperHasNews(){ return (rank('brute')>=2&&!S.met.juniperMoj)||!S.met.juniper||(S.hunts.brute&&!S.met.juniperAfter1)||(S.met.juniper&&!bountyToday().seen); }
+function juniperHasNews(){ return (S.met.juniper&&askReady('juniper'))||(rank('brute')>=2&&!S.met.juniperMoj)||!S.met.juniper||(S.hunts.brute&&!S.met.juniperAfter1)||(S.met.juniper&&!bountyToday().seen); }
 /* ---- shuffled spawn spots ---- */
 function spots(zs,n){ const out=[]; let tries=0; while(out.length<n&&tries++<400){ const Z=ZB[zs[Math.floor(Math.random()*zs.length)]], a=Math.random()*6.283, r=Math.sqrt(Math.random())*Z.r*.75, x=Z.x+Math.cos(a)*r, z=Z.z+Math.sin(a)*r;
     const f=feat(x,z); if(f.s>-2.5||f.zone.id!==Z.id) continue; if(world.rocks.some(k=>Math.hypot(k.x-x,k.z-z)<k.r+1.6)) continue; if(out.some(([ox,oz])=>Math.hypot(ox-x,oz-z)<5)) continue; if(Math.hypot(x,z-8)<10) continue; const E=S.pip.st==='active'&&pipErrand(); if(E&&Math.hypot(E.x-x,E.z-z)<6) continue; out.push([x,z]); }
@@ -1705,23 +1773,30 @@ const PIP_TALES={
   'tale-star':{title:'Where Fallen Stars Go',text:'When a star falls, it doesn’t break. It just gets tired of being so far away. It lands somewhere soft, like a meadow, and glows a little longer so someone can find it. Most people walk right past. The star doesn’t mind. It only needs one person to stop and say, “Oh. There you are.”'},
   'tale-acorn':{title:'The Golden Acorn',text:'Every year the Sleeping Tree drops one golden acorn. Nobody has ever seen it fall. It’s just there in the morning, like a gift left on a doorstep by someone who didn’t want to make a fuss. Pip thinks the tree is still awake a little, deep down. Awake enough to give one thing a year to whoever comes looking.'}};
 function pipAvail(){ return PIP_ALL.filter(e=>e.reg==='canyon'||e.reg==='wilds'||(e.reg==='mojave'&&rank('brute')>=2)); }
-function pipErrand(){ if(S.pip.id){ const e=PIP_ALL.find(x=>x.id===S.pip.id); if(e) return e; } if(S.pip.st!=='none'){ const e=PIP_ERR[(S.pip.i||0)%PIP_ERR.length]; S.pip.id=e.id; return e; }
+function quizErrand(Q){ return {id:'q-'+Q.sq,quiz:Q,short:Q.name+' ending',item:'how '+Q.name+' ends',ask:'Play {i:'+Q.name+'} in the {p:Arcade} and come tell me how it ends! I fell asleep before the end. Twice.',thanks:'THAT’S how it ends?! Okay. That’s perfect. I’m writing it down.',gift:{herb:1,ore:1}}; }
+function pipErrand(){ if(S.pip.id&&S.pip.id.startsWith('q-')){ const Q=QUIZ.find(q=>'q-'+q.sq===S.pip.id); if(Q) return quizErrand(Q); }
+  if(S.pip.st==='none'&&(S.pip.n||0)%3===2){ const Q=QUIZ.find(q=>!(S.pip.doneIds||[]).includes('q-'+q.sq)); if(Q) return quizErrand(Q); }
+  if(S.pip.id){ const e=PIP_ALL.find(x=>x.id===S.pip.id); if(e) return e; } if(S.pip.st!=='none'){ const e=PIP_ERR[(S.pip.i||0)%PIP_ERR.length]; S.pip.id=e.id; return e; }
   const A=pipAvail(), done=S.pip.doneIds||[], regs=[...new Set(A.map(e=>e.reg))]; const reg=regs[(S.pip.n||0)%regs.length]; let e=A.find(x=>x.reg===reg&&!done.includes(x.id))||A.find(x=>!done.includes(x.id)); if(!e){ S.pip.doneIds=[]; e=A.find(x=>x.reg===reg)||A[0]; } return e; }
-const pipPlace=E=>REGIONS[E.reg].ZB[E.zone].name+(E.reg==='canyon'?'':' ('+REGIONS[E.reg].name+')');
+const pipPlace=E=>E.quiz?'the Arcade':REGIONS[E.reg].ZB[E.zone].name+(E.reg==='canyon'?'':' ('+REGIONS[E.reg].name+')');
 function talkPip(){ const L=[]; let gift=null;
-  if(S.pip.st==='got'){ const E=pipErrand(); L.push(['pip','Pip','Map maker',E.thanks]); gift=E.gift; for(const [k,n] of Object.entries(gift)) S.mats[k]=(S.mats[k]||0)+n; if(E.tale&&!(S.tales||[]).includes(E.tale)){ (S.tales||(S.tales=[])).push(E.tale); } (S.pip.doneIds||(S.pip.doneIds=[])).push(E.id); S.pip.i=(S.pip.i||0)+1; S.pip.n=(S.pip.n||0)+1; S.pip.done=(S.pip.done||0)+1; S.pip.st='none'; S.pip.id=null; bump('pip'); SND.fanfare(); }
+  if(S.pip.st==='active'){ const E=pipErrand(); if(E.quiz){ const Q=E.quiz, opts=Q.a.map((t,i)=>[t,i]).sort(()=>Math.random()-.5);
+    sheet('pip','Pip','Map maker','<p class="line">'+fmt('Did you play {i:'+Q.name+'}? '+Q.q)+'</p><div class="list">'+opts.map(([t,i])=>'<button class="alt" style="text-align:left;line-height:1.35;padding:12px 14px" data-qa="'+i+'">'+esc(t)+'</button>').join('')+'</div>',[{t:'Not yet',cls:'alt',fn:closeSheet},{t:'Go to the Arcade',fn:()=>renderArcade()}]);
+    $('sheet').querySelectorAll('[data-qa]').forEach(b=>b.onclick=()=>{ if(b.dataset.qa==='0'){ S.pip.st='got'; save(); talkPip(); } else { SND.pop(); toastSheet('Pip','Hmm. That’s not how I heard it. Go play it again? I’ll wait. I’m very good at waiting.'); } }); return; } }
+  if(S.pip.st==='got'){ const E=pipErrand(); L.push(['pip','Pip','Map maker',E.thanks]); { const c=revealClue('pip'); if(c){ L.push(['pip','Pip','Map maker','Oh! And I remembered something about R. '+c.t]); S.pipClue=1; } } gift=E.gift; for(const [k,n] of Object.entries(gift)) S.mats[k]=(S.mats[k]||0)+n; if(E.tale&&!(S.tales||[]).includes(E.tale)){ (S.tales||(S.tales=[])).push(E.tale); } (S.pip.doneIds||(S.pip.doneIds=[])).push(E.id); S.pip.i=(S.pip.i||0)+1; S.pip.n=(S.pip.n||0)+1; S.pip.done=(S.pip.done||0)+1; S.pip.st='none'; S.pip.id=null; bump('pip'); SND.fanfare(); }
   if(S.pip.st==='none'){ const E=pipErrand(); S.pip.id=E.id; S.pip.st='active'; L.push(['pip','Pip','Map maker',(gift?'Oh! Um. One more thing? ':'')+E.ask]); }
   else if(S.pip.st==='active'&&!gift){ L.push(['pip','Pip','Map maker','Still need '+pipErrand().item+'. It’s the {s:purple dot} on your map when you’re out there.']); }
   if(!S.hollow&&!S.met.pipHint){ S.met.pipHint=1; L.push(['pip','Pip','Map maker','Also… something shiny is up on {p:Moonview Ledge}. Past the {i:two big rocks}. I’m too scared to look.']); }
   if(S.hollow&&!S.met.pip2){ S.met.pip2=1; L.push(['pip','Pip','Map maker','You found the {p:Hidden Hollow}?! I drew it on the map. You’re braver than me.']); }
   S.met.pip0=S.met.pip1=1; save();
-  const key=[(gift?'Pip gave you: '+Object.entries(gift).map(([k,n])=>MATS[k]+' ×'+n).join(', '):''),'Next: '+pipErrand().item+' at {p:'+pipPlace(pipErrand())+'}'].filter(Boolean);
-  seq(L,[{t:'Bye, Pip',fn:closeSheet}],key); }
+  const key=[(S.pipClue?'New clue pinned to the {s:Who is R?} board':''),(gift?'Pip gave you: '+Object.entries(gift).map(([k,n])=>MATS[k]+' ×'+n).join(', '):''),'Next: '+pipErrand().item+' at {p:'+pipPlace(pipErrand())+'}'].filter(Boolean);
+  S.pipClue=0; seq(L,[{t:'Bye, Pip',fn:closeSheet}],key); }
 /* ---- to-do desk, computer, arcade ---- */
 const LSj=(k,d)=>{ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } };
 function deskLines(){ const L=[]; const bn=bountiesDone(); L.push(['Bounties',bn+' of 3 done today'+(bn<3?' · Juniper':' ✓')]);
   if(S.pip.st==='active') L.push(['Pip',pipErrand().item+' · '+pipPlace(pipErrand())]); else if(S.pip.st==='got') L.push(['Pip','Bring him '+pipErrand().item+'!']); else L.push(['Pip','He has a new errand']);
   const wb=wins('brute'); L.push(wb<3?['Next goal',(3-wb)+' more Tumblebrute win'+(3-wb===1?'':'s')+' opens the Mojave']:wins('wyrm')<5?['Next goal','Dune Wyrm: '+wins('wyrm')+' of 5 wins']:['Next goal','Explore the Wilds']);
+  L.push(['Juniper asks',askDone('juniper')?'Done for today ✓':askText('juniper')]); L.push(['Mocha asks',askDone('mocha')?'Done for today ✓':askText('mocha')]); L.push(['Who is R?',(S.clues||[]).length+' of '+CLUES.length+' clues']);
   L.push(['The Wilds tonight',dailyWonder().name]);
   const pr=LSj('foxProfile',null); if(pr) L.push(['Fox Coins',(pr.coins||0)+' coins · Coffee Jar $'+(pr.jar||0)+' of $5']);
   return L; }
@@ -1768,9 +1843,9 @@ function startWilds(){ closeSheet(); if(!S.wilds) S.wilds={wisps:{},stones:{},da
 function wildsInteract(it){ const W=S.wilds;
   if(it.kind==='exit'){ goCamp(); return true; }
   if(it.kind==='wisp'){ it.done=true; W.wisps[it.id]=1; save(); SND.collect(); fadeOut(it); const n=wildsN().wisps; floatTxt('Wisp '+n+' of '+WISP_TOTAL); if(n===10) callout('10 wisps! The {i:Firefly jar} backpack is in your Closet.',4.5); else if(n===WISP_TOTAL) callout('Every wisp caught! They’ll glow in your camp now.',4.5); else if(n===1) callout('A {i:wisp}! There are '+WISP_TOTAL+' hiding in the Wilds. Catch 10 for a surprise.',4); return true; }
-  if(it.kind==='stone'){ const st=STONES.find(x=>x.id===it.id), first=!W.stones[st.id]; W.stones[st.id]=1; save(); if(it.m.userData.glow) it.m.userData.glow.material.opacity=.25; SND.chime(); const n=wildsN().stones;
+  if(it.kind==='stone'){ const st=STONES.find(x=>x.id===it.id), first=!W.stones[st.id]; if(first) S.stoneDay=dayKey(); W.stones[st.id]=1; save(); if(it.m.userData.glow) it.m.userData.glow.material.opacity=.25; SND.chime(); const n=wildsN().stones;
     sheet('wilds','A story stone','The Wilds · '+n+' of '+STONES.length+' stories','<div class="page"><b style="font-family:var(--ui);font-size:12px;letter-spacing:.1em;text-transform:uppercase">'+esc(st.title)+'</b><br>'+esc(st.text)+'</div><p style="margin:0;font:700 12px/1.4 var(--ui);color:#5b4a62">'+(first?'Saved to your reading nook.':'You’ve read this one.')+(first&&n===STONES.length?' Every story found! The {i:Glowshroom cap} is in your Closet.':'')+'</p>',[{t:'Keep exploring',fn:()=>{ $('sheet').hidden=true; $('pad').style.display=''; }}]); it.done=false; return true; }
-  if(it.kind==='wonder'){ const L=WONDERS.find(x=>x.id===it.id), first=!S.looks[L.id]; S.looks[L.id]=1; save(); if(it.m.userData.glow) it.m.userData.glow.material.opacity=.06; it.done=true; startVista(L,false,'Wonder '+wildsN().wonders+' of '+WONDERS.length+(first?' · new':'')); if(first) setTimeout(()=>callout('A new photo for your camp wall.',3),10500); return true; }
+  if(it.kind==='wonder'){ const L=WONDERS.find(x=>x.id===it.id), first=!S.looks[L.id]; if(first) S.newViewDay=dayKey(); S.looks[L.id]=1; save(); if(it.m.userData.glow) it.m.userData.glow.material.opacity=.06; it.done=true; startVista(L,false,'Wonder '+wildsN().wonders+' of '+WONDERS.length+(first?' · new':'')); if(first) setTimeout(()=>callout('A new photo for your camp wall.',3),10500); return true; }
   if(it.kind==='daily'){ const dk=new Date().toDateString(); W.daily[dk]=1; it.done=true; fadeOut(it); const m=pick(['herb','ore','sage','glass','scale','thorn']); S.mats[m]=(S.mats[m]||0)+1; save(); SND.fanfare(); logFox({k:'wilds',id:'daily'}); callout('Tonight’s wonder: you got {i:'+MATS[m]+'}! Come back tomorrow for a new one. ('+wildsN().days+' wonders seen)',5); say('Best night ever.',2.4); return true; }
   if(it.kind==='pearl'){ it.done=true; W.pearls[it.id]=1; fadeOut(it); S.mats.core=(S.mats.core||0)+1; S.mats.sungem=(S.mats.sungem||0)+1; save(); SND.fanfare(); const n=Object.keys(W.pearls).length; callout('A {i:Moon Pearl}! ('+n+' of 3) It hums when you hold it. +1 Moon Core, +1 Sun Gem.'+(n===3?' All three… the {p:Far Gate} is humming back.':''),5); say('Pretty.',2); return true; }
   if(it.kind==='dig'){ it.done=true; fadeOut(it); const p=wildPets[0]; const m=pick(['core','horn','sungem','fang','glass','ore']); S.mats[m]=(S.mats[m]||0)+1; W.digs=(W.digs||0)+1; save(); SND.collect(); callout('Your {n:'+(p&&p.id==='babyWyrm'?'Baby Dune Wyrm':'Baby Tumblebrute')+'} dug up {i:'+MATS[m]+'}!',4); return true; }
@@ -1789,7 +1864,7 @@ function updateWilds(dt,T){ if(!world.daily) return; if(world.anims) world.anims
 function renderWildsLog(){ const n=wildsN(); sheet('wilds','Wilds journal','The Wilds',('<div class="list">'+[['Wonders',n.wonders+' of '+WONDERS.length+' · they go on your camp Photo Wall'],['Story stones',n.stones+' of '+STONES.length+' · read them again in your reading nook'],['Wisps',n.wisps+' of '+WISP_TOTAL+' · 10 unlocks the Firefly jar'],['Moon Pearls',n.pearls+' of 3 · up high. Bounce, climb, and glide to reach them'],['Nightly wonders',n.days+' seen · a new one every day'],['Pet digs',(S.wilds.digs||0)+(S.pets.length?' found · your pets sniff these out':' · bring a pet (master a monster)')],['Further out','The Far Gate is still closed. Soon.']].map(([h,t])=>'<div class="li"><b>'+h+'</b><span>'+t+'</span></div>').join('')+'</div>'),[{t:'Close',cls:'alt',fn:()=>{ $('sheet').hidden=true; $('pad').style.display=''; }}]); }
 /* ---- pet lounge ---- */
 const PETS=[{id:'babyBrute',name:'Baby Tumblebrute',how:'Win 5 Tumblebrute hunts (Mastered ★★★)',prog:()=>Math.min(5,wins('brute'))+' of 5 wins'},{id:'babyWyrm',name:'Baby Dune Wyrm',how:'Win 5 Dune Wyrm hunts in the Mojave',prog:()=>rank('brute')>=2?Math.min(5,wins('wyrm'))+' of 5 wins':'Mojave opens at 3 Tumblebrute wins'},{id:'mystery',name:'???',how:'Somewhere further out…',prog:()=>'Later this season'}];
-function renderLounge(){ const have=PETS.filter(p=>S.pets.includes(p.id)).length; if(S.flags.newPet){ S.flags.newPet=0; save(); }
+function renderLounge(){ S.loungeDay=dayKey(); const have=PETS.filter(p=>S.pets.includes(p.id)).length; if(S.flags.newPet){ S.flags.newPet=0; save(); }
   sheet('lounge','Pet Lounge',have+' of '+PETS.length+' beds filled','<p class="line">'+fmt(have?'Your pets nap here between hunts. The empty beds are still waiting.':'Three empty beds. A name tag on each one. Someone is supposed to be sleeping here… {s:Go bring your pets home.}')+'</p><div class="list">'+
     PETS.map(p=>{ const ok=S.pets.includes(p.id); return '<div class="li"'+(ok?'':' style="opacity:.75"')+'><b>'+(ok?'✓ ':'')+esc(ok?p.name:p.name==='???'?'??? Reserved':p.name+' (empty bed)')+'</b><span>'+(ok?'Sleeping soundly. Snores a little.':esc(p.how)+' · '+p.prog())+'</span></div>'; }).join('')+'</div>',[{t:'Close',cls:'alt',fn:closeSheet}]); }
 function talk(id){
@@ -1816,6 +1891,7 @@ function talk(id){
       ['juniper','Old Juniper','Camp ranger','Make its {s:dive} hit a white {i:salt flat}. It can’t dig through salt. Go on. R didn’t wait either.']],
       [{t:'Later',cls:'alt',fn:()=>{ S.met.juniperMoj=1; save(); closeSheet(); }},{t:'To the Mojave',cls:'gold',fn:()=>{ S.met.juniperMoj=1; save(); startHunt('wyrm'); }}],
       ['{p:The Mojave} is open','Lure the {m:Dune Wyrm} into {i:salt flats}','The {m:Tumblebrute} is still there to replay']); return; }
+    { const h=handInAsk('juniper'); if(h){ seq(h.L,[{t:'Quest board',fn:()=>talk('juniper')}],h.key); return; } }
     const r=rank('brute'), w=wins('brute'), b=S.hunts.brute||{clears:0,captures:0}, a=S.hunts.angry||{clears:0,captures:0};
     const ww=wins('wyrm'), moj=rank('brute')>=2, pearls=Object.keys((S.wilds||{}).pearls||{}).length;
     const goal=!moj?{say:'The {m:Tumblebrute} is still restless. '+(3-w)+' more win'+(3-w===1?'':'s')+' and I’ll open the road to {p:the Mojave}.',main:'brute'}
@@ -1829,8 +1905,8 @@ function talk(id){
     const cardW=(rank('brute')>=2?'<div class="li"'+(goal.main==='wyrm'?' style="outline:2.5px solid var(--gold)"':'')+'>'+(goal.main==='wyrm'?'<span class="badge go" style="justify-self:start;width:max-content;margin:0 0 4px">Next up</span>':'')+'<b>The Dune Wyrm '+stars(rank('wyrm'))+' <span class="badge go">Chapter 2</span></b><span><b style="font-weight:900">'+Math.min(wins('wyrm'),5)+' of 5 wins · story '+scenesSeenN('wyrm')+' of 4</b> · The Mojave. It swims under the sand. Make its dive hit a white salt flat.</span><button id="qWyrm" class="gold">Hunt</button></div>':'<div class="li" style="opacity:.6"><b>??? Chapter 2 · The Mojave</b><span>Win '+Math.max(1,3-wins('brute'))+' more Tumblebrute hunt'+(3-wins('brute')===1?'':'s')+' to open it</span></div>');
     const cardX='<div class="li"'+(goal.main==='wilds'?' style="outline:2.5px solid var(--gold)"':'')+'>'+(goal.main==='wilds'?'<span class="badge go" style="justify-self:start;width:max-content;margin:0 0 4px">Next up</span>':'')+'<b>The Wilds</b><span>No monsters. Wonders, story stones, wisps · Moon Pearls '+pearls+' of 3</span><button id="qWilds" class="'+(goal.main==='wilds'?'gold':'alt')+'">Go</button></div>';
     const order=goal.main==='brute'?[cardB,cardW,cardX,cardA]:goal.main==='wyrm'?[cardW,cardX,cardB,cardA]:[cardX,cardW,cardB,cardA];
-    bountyToday().seen=true; save(); sheet('juniper','Old Juniper','Quest board','<p class="line">'+fmt(goal.say)+'</p><div class="list">'+order.join('')+'</div>'+bountyHTML()+
-      '<p class="line">'+fmt(S.buff?'You’ve got a '+({latte:'vanilla latte',matcha:'matcha',thai:'Thai tea'}[S.buff])+' in hand. Good.':'Stop by {p:Mocha’s café} first. A coffee helps more than you’d think.')+'</p>',[{t:'Close',cls:'alt',fn:closeSheet}]);
+    bountyToday().seen=true; save(); sheet('juniper','Old Juniper','Quest board','<p class="line">'+fmt(goal.say)+'</p><div class="keycard"><span>'+fmt(askDone('juniper')?'Today’s favor: done. Thank you. Come back tomorrow.':'{s:Today’s favor:} '+askText('juniper'))+'</span></div><div class="list">'+order.join('')+'</div>'+bountyHTML()+
+      '<p class="line">'+fmt(S.buff?'You’ve got a '+({latte:'vanilla latte',matcha:'matcha',thai:'Thai tea',special:special().n.toLowerCase()}[S.buff])+' in hand. Good.':'Stop by {p:Mocha’s café} first. A coffee helps more than you’d think.')+'</p>',[{t:'Close',cls:'alt',fn:closeSheet}]);
     $('qGo').onclick=()=>startHunt('brute'); if($('qAngry')) $('qAngry').onclick=()=>startHunt('angry'); if($('qWyrm')) $('qWyrm').onclick=()=>startHunt('wyrm'); if($('qWilds')) $('qWilds').onclick=()=>startWilds();
     const nb=document.createElement('button'); nb.textContent='Field notes'; nb.className='alt'; nb.onclick=showNotes; $('sheet').querySelector('.opts').prepend(nb); return; }
   if(id==='pip'){ talkPip(); return; }
@@ -1848,10 +1924,18 @@ function talk(id){
       ['pip','Pip','Map maker','I’m too scared to look. You get it, right? Outside is a lot.']],[{t:'Bye, Pip',fn:closeSheet}],key); return; }
     S.met.pip2=1; save(); seq([['pip','Pip','Map maker','You found the {p:Hidden Hollow}?! I drew it on the map. You’re braver than me.'],['pip','Pip','Map maker','Next time bring me a souvenir. A small one. That doesn’t bite.']],[{t:'Bye, Pip',fn:closeSheet}]); return; }
   if(id==='mocha'){
-    const herbs=S.mats.herb||0, free=!S.cafeUses;
+    { const ask=todaysAsks().m; if(ask.id==='sit'&&ask.st!=='done'){ const h=handInAsk('mocha'); if(h){ h.L.unshift(['mocha','Mocha','Camp café',M_ASKS.sit.t]); seq(h.L,[{t:'Open the café',fn:()=>talk('mocha')}],h.key); return; } }
+      const h=handInAsk('mocha'); if(h){ seq(h.L,[{t:'Open the café',fn:()=>talk('mocha')}],h.key); return; } }
+    S.askSeenM=dayKey(); save();
+    const herbs=(S.mats.herb||0)+(S.mats.sage||0), free=!S.cafeUses, sp=special(), pu=popupItem();
+    const askLine='<div class="keycard"><span>'+fmt(askDone('mocha')?'Today’s favor: done. You’re the best.':'{s:Today’s favor:} '+askText('mocha'))+'</span></div>';
+    const spRow='<div class="li" style="outline:2px solid var(--gold)"><span class="badge go" style="justify-self:start;width:max-content;margin:0 0 4px">This week only</span><b>'+esc(sp.n)+'</b><span>'+fmt(sp.d)+' next hunt</span><button data-buff="special" class="'+(free||herbs>0?'gold':'')+'"'+(!free&&herbs<1?' disabled':'')+'>'+(S.buff==='special'?'Ordered':free?'Free':'1 herb')+'</button></div>';
+    const puRow=pu&&S.popupWeek!==weekN()?'<div class="li"><span class="badge" style="justify-self:start;width:max-content;margin:0 0 4px">Pop-up shop · gone Sunday</span><b>'+esc(pu.name)+'</b><span>Normally: '+esc(pu.how)+'. This week: 3 herbs.</span><button id="popBuy" class="'+(herbs>=3?'gold':'')+'"'+(herbs<3?' disabled':'')+'>3 herbs</button></div>':'';
     const o=[['latte','Vanilla latte, extra caramel','{s:+25 max HP} next hunt'],['matcha','Iced matcha','{s:Stamina} refills 45% faster'],['thai','Thai tea','{s:+15% attack}']];
-    sheet('mocha','Mocha','Camp café','<p class="line">'+fmt(free?'First one’s on the house. What’ll it be?':'One {i:Creek Herb} per drink. I don’t make the rules. (I make the rules.)')+'</p><div class="list">'+o.map(([k,n,d])=>'<div class="li"><b>'+n+'</b><span>'+fmt(d)+'</span><button data-buff="'+k+'" class="'+(free||herbs>0?'gold':'')+'"'+(!free&&herbs<1?' disabled':'')+'>'+(S.buff===k?'Ordered':free?'Free':'1 herb')+'</button></div>').join('')+'</div><p style="margin:0;font:700 12px/1.45 var(--ui);color:#5b4a62">'+fmt('You have '+herbs+' {i:Creek Herb}'+(herbs===1?'':'s')+'. Gather more at {p:Kitty Creek}. One drink at a time.')+'</p>',[{t:'Close',cls:'alt',fn:closeSheet}]);
-    $('sheet').querySelectorAll('[data-buff]').forEach(b=>b.onclick=()=>{ const k=b.dataset.buff; if(S.buff===k) return; if(!free) S.mats.herb=(S.mats.herb||0)-1; S.cafeUses++; S.buff=k; bump('coffee'); save(); say(k==='latte'?'Lista barista.':'Wooohooo!',2); toastSheet('Mocha','Order’s up! It lasts for your next hunt.'); }); return; }
+    sheet('mocha','Mocha','Camp café',askLine+'<p class="line">'+fmt(free?'First one’s on the house. What’ll it be?':'One {i:Creek Herb} per drink. I don’t make the rules. (I make the rules.)')+'</p><div class="list">'+spRow+puRow+o.map(([k,n,d])=>'<div class="li"><b>'+n+'</b><span>'+fmt(d)+'</span><button data-buff="'+k+'" class="'+(free||herbs>0?'gold':'')+'"'+(!free&&herbs<1?' disabled':'')+'>'+(S.buff===k?'Ordered':free?'Free':'1 herb')+'</button></div>').join('')+'</div><p style="margin:0;font:700 12px/1.45 var(--ui);color:#5b4a62">'+fmt('You have '+herbs+' herb'+(herbs===1?'':'s')+' (Creek Herb or Desert Sage). One drink at a time.')+'</p>',[{t:'Close',cls:'alt',fn:closeSheet}]);
+    $('sheet').querySelectorAll('[data-buff]').forEach(b=>b.onclick=()=>{ const k=b.dataset.buff; if(S.buff===k) return; if(!free){ if((S.mats.herb||0)>0) S.mats.herb--; else S.mats.sage--; } S.cafeUses++; S.buff=k; if(k==='special') S.specialWeek=weekN(); bump('coffee'); save(); if(askReady('mocha')){ talk('mocha'); return; } say(k==='latte'?'Lista barista.':'Wooohooo!',2); toastSheet('Mocha','Order’s up! It lasts for your next hunt.'); });
+    if($('popBuy')) $('popBuy').onclick=()=>{ for(let i=0;i<3;i++){ if((S.mats.herb||0)>0) S.mats.herb--; else S.mats.sage--; } (S.popup||(S.popup=[])).push(pu.id); S.popupWeek=weekN(); save(); SND.fanfare(); if(askReady('mocha')){ talk('mocha'); return; } toastSheet('Mocha','The '+pu.name+' is in your Closet. Wear it proudly.'); }; return; }
+  if(id==='rboard'){ S.cluesSeen=(S.clues||[]).length; renderRBoard(); return; }
   if(id==='forge'){ openArmory(); return; }
   if(id==='nook'){ renderLibrary(); return; }
   if(id==='closet'){ openDress(); return; }
@@ -1887,7 +1971,7 @@ function renderCloset(msg){
   $('sheet').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ const g=GALLERY.find(x=>x.id===b.dataset.g); if(g.future||!g.ok()){ renderCloset((g.future?'Coming later: ':'How to unlock: ')+g.how); return; } if(g.deco){ renderCloset('Tap {s:Decorate} at camp to place your '+g.name+'.'); return; } g.wear(); save(); SND.pop(); renderCloset(); });
   setTimeout(()=>{ for(const g of shown) if(g.ok()) markSeen(g.id); save(); },50);
 }
-function renderLibrary(){
+function renderLibrary(){ S.nookDay=dayKey(); save();
   const L=libraryEntries();
   const rows=L.map(e=>'<button class="lb" data-l="'+e.id+'"><div class="bk" style="background:'+e.col+'"></div><div><b>'+esc(e.title)+(!seen(e.id)?'<em class="badge">New</em>':'')+'</b><span>'+(e.html?e.sub:esc(e.sub))+'</span></div><span class="time">'+e.time+'</span></button>').join('');
   const locked='<div class="lb locked"><div class="bk" style="background:#cfc6cf"></div><div><b>More stories</b><span>Short reads about the canyon arrive soon.</span></div><span class="time">2–10 min</span></div>';
@@ -1957,9 +2041,9 @@ function refreshCamp(){ if(!camp) return;
   camp.decoG.clear(); for(const p of S.placed){ const m=makeDeco(p.id); m.position.set(GRID.x0+(p.gx+.5)*GRID.cell,0,GRID.z0+(p.gz+.5)*GRID.cell); m.rotation.y=p.r*Math.PI/2; m.userData.p=p; camp.decoG.add(m); }
   camp.petG.clear(); if(S.pets.includes('babyBrute')){ const b=makeBrute(.32); b.root.position.set(camp.beds[0].x,.28,camp.beds[0].z); b.root.rotation.y=camp.beds[0].ry; b.lids.forEach(l=>l.visible=true); b.zzz.forEach(z=>{ z.visible=true; z.scale.set(2.4,2.4,1); }); camp.petG.add(b.root); camp.petG.userData.baby=b; }
   if(S.pets.includes('babyWyrm')){ const w=makeWyrm(.3); const bd=camp.beds[1]; w.root.position.set(bd.x,.3,bd.z); w.root.rotation.y=bd.ry; w.lids.forEach(l=>l.visible=true); w.shadow.visible=false; w.segs.forEach((sg,i)=>{ const a=(i+1)*.9; sg.g.position.set(Math.sin(a)*2.4,sg.g.position.y-.6,Math.cos(a)*2.4-2); }); w.shell.userData.sync(); camp.petG.add(w.root); }
-  camp.books.forEach((b,i)=>b.visible=!!(i<S.pages.length)); drawDeskNotes();
+  camp.books.forEach((b,i)=>b.visible=!!(i<S.pages.length)); drawDeskNotes(); if(camp.rbNotes) camp.rbNotes.forEach((n,i)=>n.visible=i<(S.clues||[]).length);
   camp.photos.forEach((p,i)=>{ const L=LOOKS[i], got=!!(S.looks||{})[L.id]; if(got&&!p.tex){ p.tex=new THREE.TextureLoader().load(photoSrc(L.id)); p.tex.encoding=THREE.sRGBEncoding; p.ph.material=new THREE.MeshBasicMaterial({map:p.tex,toneMapped:false}); } p.g.visible=true; if(!got) p.ph.material.color.copy(col('#6d5a74')); });
-  camp.npcs.forEach(n=>{ n.bang.visible=!!((n.id==='juniper'&&juniperHasNews())||(n.id==='pip'&&(S.pip.st!=='active'||(S.hollow&&!S.met.pip2)))||(n.id==='lounge'&&(!S.met.lounge||S.flags.newPet))); n.newTag.visible=!!((n.id==='forge'&&forgeNew())||(n.id==='closet'&&closetNew())||(n.id==='nook'&&nookNew())); });
+  camp.npcs.forEach(n=>{ n.bang.visible=!!((n.id==='mocha'&&S.met.juniper&&(askReady('mocha')||S.askSeenM!==dayKey()))||(n.id==='rboard'&&(S.clues||[]).length>(S.cluesSeen||0))||(n.id==='juniper'&&juniperHasNews())||(n.id==='pip'&&(S.pip.st!=='active'||(S.hollow&&!S.met.pip2)))||(n.id==='lounge'&&(!S.met.lounge||S.flags.newPet))); n.newTag.visible=!!((n.id==='forge'&&forgeNew())||(n.id==='closet'&&closetNew())||(n.id==='nook'&&nookNew())); });
   updateHUD(); }
 function cellAt(clientX,clientY){ const r=renderer.domElement.getBoundingClientRect(); const v=new THREE.Vector2((clientX-r.left)/r.width*2-1,-(clientY-r.top)/r.height*2+1); const rc=new THREE.Raycaster(); rc.setFromCamera(v,camera); const hit=new THREE.Vector3(); if(!rc.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),hit)) return null; const gx=Math.floor((hit.x-GRID.x0)/GRID.cell), gz=Math.floor((hit.z-GRID.z0)/GRID.cell); if(gx<0||gz<0||gx>=GRID.nx||gz>=GRID.nz) return null; return {gx,gz}; }
 const placedAt=(gx,gz)=>S.placed.find(p=>p.gx===gx&&p.gz===gz);
@@ -1991,7 +2075,7 @@ function updateHUD(){
   const hpPct=Math.max(0,P.hp/P.maxhp*100); $('hpBar').firstElementChild.style.width=hpPct+'%'; $('hpBar').classList.toggle('low',hpPct<30); $('stBar').firstElementChild.style.width=P.st+'%';
   $('bars').style.display=mode==='hunt'?'':'none'; $('coffeeBtn').style.display=mode==='hunt'?'':'none'; $('rollBtn').style.display=mode==='hunt'?'':'none';
   let meta=''; if(mode==='hunt'&&hunt&&hunt.variant==='wilds'){ const n=wildsN(); meta+='<span class="chip">Wonders '+n.wonders+'/'+WONDERS.length+'</span><span class="chip">Stories '+n.stones+'/'+STONES.length+'</span><span class="chip">Wisps '+n.wisps+'/'+WISPS.length+'</span><span class="chip" style="background:#5b52a8">'+dailyWonder().name+'</span>'; } else if(mode==='hunt'){ meta+='<span class="chip opt">Coffee ×'+P.coffee+'</span><span class="chip">Tries '+(3-P.faints)+'/3</span><span class="chip opt">Bounties '+bountiesDone()+'/3</span>'+(hunt&&hunt.twist?'<span class="chip">'+hunt.twist.name+'</span>':'')+(hunt&&!hunt.done&&S.pip.st==='active'&&pipErrand()&&pipErrand().reg===REGID?'<span class="chip" style="background:#5b52a8">Pip: '+pipErrand().short+'</span>':''); meta+='<span class="chip opt">Secrets '+(REGID==='mojave'?(MSECRETS.length-mSecretsLeft())+'/'+MSECRETS.length:(secretsTotal-secretsLeft())+'/'+secretsTotal)+'</span>'; if(hunt&&hunt.buff) meta+='<span class="chip">'+{latte:'Latte +HP',matcha:'Matcha +ST',thai:'Thai tea +ATK'}[hunt.buff]+'</span>'; }
-  else { meta+='<span class="chip">'+WEAPONS[S.weapon].name+'</span>'; if(S.buff) meta+='<span class="chip">'+{latte:'Latte ready',matcha:'Matcha ready',thai:'Thai tea ready'}[S.buff]+'</span>'; }
+  else { meta+='<span class="chip">'+WEAPONS[S.weapon].name+'</span>'; if(S.buff) meta+='<span class="chip">'+{latte:'Latte ready',matcha:'Matcha ready',thai:'Thai tea ready',special:'Special ready'}[S.buff]+'</span>'; }
   $('meta').innerHTML=meta; $('coffeeN').textContent=P.coffee;
   let o=''; if(mode==='camp'){ const nx=NOTES.find(n=>!n.done()&&!['hunt','capture','shell','horns','tracks'].includes(n.id)&&(n.id!=='cafe'||!S.buff)); o=decoMode?'Decorating your camp':(!S.met.juniper?'Talk to Old Juniper at the quest board':!S.hunts.brute?'Talk to Juniper to start the hunt':bountiesDone()<3?'Today’s bounties '+bountiesDone()+'/3 · see {n:Old Juniper}':nx?'Next: '+(nx.secret?nx.hint:nx.t):'Talk to Juniper to hunt again'); }
   else if(hunt&&hunt.variant==='wilds'){ o='Explore the Wilds · tap '+(wildsN().stones<STONES.length?'glowing {i:story stones}':'the {i:Far Gate}')+' and catch {i:wisps}'; }
@@ -2096,9 +2180,9 @@ requestAnimationFrame(t=>{ last=t; $('loading').style.display='none';
   frame(t); });
 document.addEventListener('visibilitychange',()=>{ last=performance.now(); });
 /* ---- update checker: tells her when a new version is live ---- */
-const BUILD='1793430500';
+const BUILD='1793460673';
 if(IN_SET&&BUILD){ const chk=()=>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{ if(j.v&&j.v!==BUILD&&!document.getElementById('updPill')){ const b=document.createElement('button'); b.id='updPill'; b.textContent='✨ A new update is ready · tap to reload'; b.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:90;background:#5b52a8;color:#fff6e9;border:0;border-radius:999px;padding:10px 16px;font:800 13px/1 var(--ui);box-shadow:0 6px 18px rgba(0,0,0,.3)'; b.onclick=()=>{ try{ save(); }catch(e){} location.href='canyon.html?v='+j.v; }; document.body.appendChild(b); } }).catch(()=>{});
   setTimeout(chk,5000); setInterval(chk,180000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) chk(); }); }
-window.__fox={get world(){ return world; },camera,renderer,startVista,LOOKS,MLOOKS,WONDERS,startWilds,playScene,get scene(){ return scene; },groundH,get cine(){ return cine; },endHunt,routeTo,goCamp,toggleDeco,press:k=>{ if(k==='jump') jumpQ=true; if(k==='act') actQ=true; if(k==='roll') rollQ=true; if(k==='coffee') coffeeQ=true; if(k==='use') interactQ=true; },move:(x,z)=>{ botMove=x===null?null:{x,z,m:Math.min(1,Math.hypot(x,z))}; },get ctx(){return ctxNow;},get tele(){return tele;},get S(){return S;},get P(){return P;},get B(){return B;},get hunt(){return hunt;},get mode(){return mode;},startHunt,talk,inter:()=>inter,findCtx,doInteract,damageBrute,feat,CH,ZB};
+window.__fox={todaysAsks,dayKey,closeSheet,get world(){ return world; },camera,renderer,startVista,LOOKS,MLOOKS,WONDERS,startWilds,playScene,get scene(){ return scene; },groundH,get cine(){ return cine; },endHunt,routeTo,goCamp,toggleDeco,press:k=>{ if(k==='jump') jumpQ=true; if(k==='act') actQ=true; if(k==='roll') rollQ=true; if(k==='coffee') coffeeQ=true; if(k==='use') interactQ=true; },move:(x,z)=>{ botMove=x===null?null:{x,z,m:Math.min(1,Math.hypot(x,z))}; },get ctx(){return ctxNow;},get tele(){return tele;},get S(){return S;},get P(){return P;},get B(){return B;},get hunt(){return hunt;},get mode(){return mode;},startHunt,talk,inter:()=>inter,findCtx,doInteract,damageBrute,feat,CH,ZB};
 })();
 </script>
