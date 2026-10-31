@@ -1096,7 +1096,7 @@ function revealClue(who){ const i=nextClue(who); if(i<0) return null; (S.clues||
 const dayKey=()=>new Date().toDateString(), weekN=()=>Math.floor((Date.now()/864e5+3)/7);
 // weekly café special + pop-up item
 const SPECIALS=[{n:'Pumpkin spice cold brew',d:'{s:+15 max HP} and {s:+8% attack}'},{n:'Lavender honey latte',d:'{s:+15 max HP} and {s:+8% attack}'},{n:'Horchata iced coffee',d:'{s:+15 max HP} and {s:+8% attack}'},{n:'Brown sugar oat shaken espresso',d:'{s:+15 max HP} and {s:+8% attack}'}];
-const special=()=>SPECIALS[weekN()%SPECIALS.length];
+const special=()=>isHW()?{n:'Pumpkin spice cold brew (Halloween only)',d:'{s:+15 max HP} and {s:+8% attack}'}:SPECIALS[weekN()%SPECIALS.length];
 function popupItem(){ const w=weekN(); if(S.popupPick&&S.popupPick.w===w) return GALLERY.find(g=>g.id===S.popupPick.id)||null; const pool=GALLERY.filter(g=>!g.future&&!g.deco&&g.id!=='cape'&&!g.ok()&&!(S.popup||[]).includes(g.id)); const it=pool.length?pool[w%pool.length]:null; S.popupPick={w,id:it&&it.id}; return it; }
 // ---- today's asks ----
 const J_ASKS={
@@ -1135,6 +1135,60 @@ const QUIZ=[{sq:'race',name:'Race Day',q:'How does Race Day end?',a:['“I’ll 
   {sq:'coffee',name:'Can We Get Coffee?',q:'How does Can We Get Coffee? end?',a:['Outside survived. Book reopened. Perfect day.','Coffee spilled. Book lost. Rough day.','Never went outside. Perfect day.']},
   {sq:'drive',name:'The Drive Up',q:'What does The Drive Up say at the end?',a:['Admit it. You kind of love the canyon.','Admit it. You kind of love the beach.','Admit it. You kind of love the city.']},
   {sq:'book',name:'Into the Book',q:'How does Into the Book end?',a:['Best adventure ever, and she never had to go outside. (Mostly.)','Best adventure ever, and the dragon came home with her.','Best adventure ever, and she went outside every day.']}];
+
+/* =============== HALLOWEEN (Oct 31 only, ends at midnight on her clock) =============== */
+const isHW=()=>{ if(window.__hw) return true; const d=new Date(); return d.getMonth()===9&&d.getDate()===31; };
+const HW_SKY={top:'#1c1240',mid:'#5a2d6e',bottom:'#e8743a',fog:'#4a2a55',fogN:40,fogF:150,sun:'#ffa060',sunI:1.1,hemiSky:'#8a6ac9',hemiGround:'#3a2030',hemiI:.5};
+function makePumpkin(s){ const g=new THREE.Group(); const o=toon('#f08a24');
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; const r=mesh(new THREE.SphereGeometry(.42,10,8),o,Math.sin(a)*.2,.38,Math.cos(a)*.2,g); r.scale.set(.75,.85,.75); r.rotation.y=a; }
+  mesh(new THREE.CylinderGeometry(.06,.08,.25,6),toon('#5a7a2a'),0,.85,0,g).rotation.z=.25;
+  const face=new THREE.MeshBasicMaterial({color:col('#ffd85a')});
+  for(const sd of [-1,1]){ const e=mesh(new THREE.ConeGeometry(.09,.12,3),face,sd*.15,.48,.47,g); e.rotation.x=Math.PI/2; e.rotation.z=Math.PI; }
+  const m=mesh(new THREE.BoxGeometry(.34,.07,.04),face,0,.27,.5,g); for(const sd of [-1,1]) mesh(new THREE.BoxGeometry(.07,.07,.04),face,sd*.1,.33,.5,g);
+  const gl=glowSprite(TEX.warm,2.2,.55); gl.position.y=.45; g.add(gl); g.userData.glow=gl;
+  g.scale.setScalar(s||1); return g; }
+function makeBat(){ const g=new THREE.Group(), b=new THREE.MeshBasicMaterial({color:col('#1a1222'),side:THREE.DoubleSide});
+  mesh(new THREE.SphereGeometry(.16,8,6),b,0,0,0,g).scale.set(1,.9,1.3);
+  for(const sd of [-1,1]) mesh(new THREE.ConeGeometry(.05,.14,4),b,sd*.08,.16,.05,g);
+  const wings=[-1,1].map(sd=>{ const w=new THREE.Group(); g.add(w); const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0, sd*.7,.15,.1, sd*.55,-.1,-.15, sd*.7,.15,.1, sd*.35,-.12,.1, sd*.55,-.1,-.15],3)); w.add(new THREE.Mesh(geo,b)); return w; });
+  for(const sd of [-1,1]) mesh(new THREE.SphereGeometry(.03,4,4),new THREE.MeshBasicMaterial({color:col('#ffcf4a')}),sd*.06,.05,.18,g);
+  g.userData.wings=wings; return g; }
+function makeGhost(){ const g=new THREE.Group(), w=new THREE.MeshToonMaterial({color:col('#f6f0ff'),gradientMap:gradTex,transparent:true,opacity:.88,emissive:col('#3a3060')});
+  mesh(new THREE.SphereGeometry(.55,14,10),w,0,1.1,0,g); const sk=mesh(new THREE.CylinderGeometry(.55,.7,.8,14,1,true),w,0,.62,0,g);
+  for(let i=0;i<6;i++){ const a=i/6*Math.PI*2; mesh(new THREE.ConeGeometry(.16,.3,6),w,Math.sin(a)*.58,.12,Math.cos(a)*.58,g).rotation.x=Math.PI; }
+  const k=new THREE.MeshBasicMaterial({color:col('#2b2230')}); for(const sd of [-1,1]) mesh(new THREE.SphereGeometry(.08,8,6),k,sd*.18,1.18,.5,g).scale.set(1,1.4,.5);
+  mesh(new THREE.SphereGeometry(.07,8,6),k,0,.95,.52,g).scale.set(1,1.2,.5);
+  const gl=glowSprite(TEX.white,3,.35); gl.position.y=.9; g.add(gl); return g; }
+// sky + decorations for whichever world is showing
+function hwWorld(){ if(!world||world._hw||!isHW()) return; world._hw=1;
+  const grp=new THREE.Group(); world.scene.add(grp); world.hwG=grp; const H=(x,z)=>groundH(x,z);
+  const bats=[], ghosts=[], pk=[];
+  const ctr=mode==='camp'?[{x:0,z:0,r:16}]:ZONES.filter(z=>!z.hidden).map(z=>({x:z.x,z:z.z,r:z.r*.8}));
+  for(let i=0;i<14;i++){ const c=ctr[i%ctr.length], a=Math.random()*6.28; const bt=makeBat(); grp.add(bt); bats.push({g:bt,cx:c.x,cz:c.z,r:4+Math.random()*c.r*.6,a,sp:.8+Math.random()*.8,h:4+Math.random()*4,ph:Math.random()*6}); }
+  ctr.slice(0,mode==='camp'?1:4).forEach((c,i)=>{ const gh=makeGhost(); grp.add(gh); ghosts.push({g:gh,cx:c.x+(mode==='camp'?-12:4),cz:c.z+(mode==='camp'?-6:3),a:i*2,r:mode==='camp'?2.5:6}); });
+  if(mode==='camp'){ for(let i=0;i<16;i++){ const a=i/16*Math.PI*2+.1, r=i%2?14:19.5; const x=Math.sin(a)*r, z=Math.cos(a)*r; const p=makePumpkin(.7+Math.random()*.6); p.position.set(x,H(x,z),z); p.rotation.y=Math.atan2(-x,-z); grp.add(p); pk.push(p); }
+    const sign=makeSignHW(); sign.position.set(0,0,8.5); grp.add(sign); }
+  world.hwAnim=(dt,T)=>{ if(!isHW()){ grp.visible=false; if(world.hwSky){ world.hwSky=0; setSky(false); } return; }
+    bats.forEach(b=>{ b.a+=b.sp*dt; const x=b.cx+Math.sin(b.a)*b.r, z=b.cz+Math.cos(b.a)*b.r; b.g.position.set(x,H(x,z)+b.h+Math.sin(T*2+b.ph)*.6,z); b.g.rotation.y=b.a+Math.PI/2; const f=Math.sin(T*18+b.ph)*.9; b.g.userData.wings[0].rotation.z=f; b.g.userData.wings[1].rotation.z=-f; });
+    ghosts.forEach(g=>{ g.a+=dt*.35; const x=g.cx+Math.sin(g.a)*g.r, z=g.cz+Math.cos(g.a)*g.r; g.g.position.set(x,H(x,z)+.6+Math.sin(T*1.6+g.a)*.35,z); g.g.rotation.y=g.a+Math.PI/2; const d=Math.hypot(P.x-x,P.z-z); if(d<3&&!g.boo){ g.boo=1; say(pick(['Eek!','Boo to you too!','A ghost! A cute one.']),1.8); SND.pop(); } if(d>6) g.boo=0; });
+    pk.forEach((p,i)=>{ if(p.userData.glow) p.userData.glow.material.opacity=.45+Math.sin(T*7+i*1.7)*.12; }); };
+  world.hwSky=1; setSky(false); }
+function makeSignHW(){ const c=document.createElement('canvas'); c.width=512; c.height=128; const g=c.getContext('2d'); g.fillStyle='#2b1a3a'; g.fillRect(0,0,512,128); g.fillStyle='#ff9a3a'; g.font='bold 64px Gaegu, cursive'; g.textAlign='center'; g.fillText('Happy Halloween!',256,84);
+  const s=new THREE.Group(); const m=new THREE.Mesh(new THREE.PlaneGeometry(3.4,.85),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c)})); m.position.y=2.6; s.add(m); for(const x of [-1.5,1.5]) mesh(new THREE.CylinderGeometry(.06,.06,2.6,6),toon('#4a3040'),x,1.3,0,s); return s; }
+// trick-or-treat pumpkins inside hunts
+function hwHunt(){ if(!hunt||hunt._hw||!isHW()) return; hunt._hw=1; hwWorld();
+  (world._hwP||[]).forEach(m=>world.scene.remove(m)); world._hwP=[];
+  const zs=ZONES.filter(z=>!z.hidden); let n=0;
+  for(let i=0;i<40&&n<9;i++){ const z=zs[i%zs.length], a=Math.random()*6.28, r=z.r*(.3+Math.random()*.5); const x=z.x+Math.sin(a)*r, zz=z.z+Math.cos(a)*r; if(Math.hypot(x-P.x,zz-P.z)<5) continue;
+    const m=makePumpkin(1.1); m.position.set(x,groundH(x,zz),zz); m.rotation.y=Math.random()*6; world.scene.add(m); world._hwP.push(m);
+    inter.push({kind:'pumpkin',x,z:zz,y:groundH(x,zz),r:2,act:'Trick or treat',m}); n++; }
+  setTimeout(()=>callout('Happy Halloween! Glowing {i:pumpkins} are hiding around the map. Trick or treat!',4.5),2600); }
+function hwTreat(it){ it.done=true; fadeOut(it); hunt.treats=(hunt.treats||0)+1; S.flags.treats=(S.flags.treats||0)+1;
+  if(Math.random()<.3){ say(pick(['Trick! A bat flew out!','Trick! It was empty. Rude.','Boo! …just a bat.']),2); SND.pop(); const b=makeBat(); world.scene.add(b); let t=0; const f=()=>{ t+=.016; b.position.set(it.x+t*3,it.y+1+t*6,it.z+t*2); const w=Math.sin(t*40); b.userData.wings[0].rotation.z=w; b.userData.wings[1].rotation.z=-w; if(t<2) requestAnimationFrame(f); else world.scene.remove(b); }; f(); return; }
+  const m=pick(REGID==='mojave'?['sage','sage','ore']:['herb','herb','ore']); hunt.gained.push(m); floatTxt('Treat! +1 '+MATS[m]); SND.fanfare(); save(); }
+// a costume gift on Halloween night
+function hwGift(){ if(!isHW()||S.flags.hw2026) return; S.flags.hw2026=1; (S.popup||(S.popup=[])).includes('hat_witch')||S.popup.push('hat_witch'); save();
+  setTimeout(()=>callout('Happy Halloween! A {i:Moon witch hat} is waiting in your {p:Closet}. Yours to keep.',5),1800); }
 
 /* =============== TEXT, MASTERY, COSMETICS =============== */
 const ICON={p:'<svg viewBox="0 0 12 12"><path d="M6 1a3.5 3.5 0 0 1 3.5 3.5C9.5 7 6 11 6 11S2.5 7 2.5 4.5A3.5 3.5 0 0 1 6 1z" fill="currentColor"/><circle cx="6" cy="4.5" r="1.3" fill="#fff"/></svg>',
@@ -1238,7 +1292,7 @@ function setScene(m,rg){
 /* =============== HUNT SETUP =============== */
 /* ---- hunt variety: night hunts, twists, scaling ---- */
 const NIGHT={top:'#141a3d',mid:'#3b3570',bottom:'#7a5f8f',fog:'#2a2950',fogN:38,fogF:140,sun:'#b4c2ff',sunI:.85,hemiSky:'#5a5fa8',hemiGround:'#2a1f35',hemiI:.34};
-function setSky(night,fog){ const E=world.env, Q=night?NIGHT:E.P, U=E.sky.material.uniforms; U.top.value=colS(Q.top); U.mid.value=colS(Q.mid); U.bottom.value=colS(Q.bottom);
+function setSky(night,fog){ const E=world.env, Q=(world.hwSky&&isHW())?HW_SKY:night?NIGHT:E.P, U=E.sky.material.uniforms; U.top.value=colS(Q.top); U.mid.value=colS(Q.mid); U.bottom.value=colS(Q.bottom);
   world.scene.fog.color.copy(col(Q.fog)); world.scene.fog.near=fog?16:(Q.fogN||50); world.scene.fog.far=fog?85:(Q.fogF||170); E.sun.color.copy(col(Q.sun)); E.sun.intensity=Q.sunI; E.hemi.color.copy(col(Q.hemiSky)); E.hemi.groundColor.copy(col(Q.hemiGround)); E.hemi.intensity=Q.hemiI; }
 const TWISTS=[
   {id:'fullmoon',name:'Full Moon',desc:'It hits harder, but drops better loot.'},
@@ -1719,6 +1773,7 @@ function doInteract(c){
   if(c.kind==='npc') return talk(c.n.id);
   if(c.kind==='carve'){ P.state='carve'; P.t=0; return; }
   if(c.kind==='trap'){ const a=P.ang; trap={x:P.x+Math.sin(a)*1.8,z:P.z+Math.cos(a)*1.8,armed:true}; trap.m=makeTrap(); trap.m.position.set(trap.x,CH(trap.x,trap.z),trap.z); world.scene.add(trap.m); callout('Trap set! The kitties put a fish in it. Lure it over.',3.5); SND.pop(); SND.meow(); say('Here, buddy. Fishy fishy.',2.2); return; }
+  if(c.kind==='pumpkin') return hwTreat(c);
   if(hunt&&hunt.variant==='wilds'&&wildsInteract(c)) return;
   const it=c; it.done=true; if(['herb','ore','cherry','deco','page'].includes(it.kind)) SND.collect(); else SND.chime(); if(it.kind==='kitty') SND.meow();
   if(it.kind==='track'){ hunt.tracks++; fadeOut(it); if(hunt.tracks>=3){ S.flags.tracks=1; save(); }
@@ -2129,6 +2184,7 @@ function frame(now){ const rdt=Math.min(.05,(now-last)/1000); last=now; T+=rdt; 
   ctxNow=findCtx();
   if(!$('sheet').hidden||!$('results').hidden||decoMode||cine||scene||dressMode){ /* paused input */ actQ=rollQ=coffeeQ=interactQ=jumpQ=false; }
   updatePlayer(dt,T);
+  if(isHW()){ if(mode==='camp'){ hwWorld(); if(!S.flags.hw2026) hwGift(); } else if(hunt&&!hunt.done) hwHunt(); } if(world.hwAnim) world.hwAnim(rdt,T);
   if(mode==='hunt'){ if(!scene) hunt.t+=dt; updateBrute(dt,T); if(!scene) updateMobs(dt,T);
     if(hunt&&hunt.variant==='wilds') updateWilds(dt,T);
     if(world.tumble) world.tumble.forEach(t=>{ t.x+=t.sp*dt; if(t.x>70) t.x=-85; t.g.position.set(t.x,CH(t.x,t.z)+.5+Math.abs(Math.sin(T*3+t.z))*.5,t.z); t.g.rotation.z-=t.sp*dt*1.8; });
@@ -2180,7 +2236,7 @@ requestAnimationFrame(t=>{ last=t; $('loading').style.display='none';
   frame(t); });
 document.addEventListener('visibilitychange',()=>{ last=performance.now(); });
 /* ---- update checker: tells her when a new version is live ---- */
-const BUILD='1793460673';
+const BUILD='1793489188';
 if(IN_SET&&BUILD){ const chk=()=>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{ if(j.v&&j.v!==BUILD&&!document.getElementById('updPill')){ const b=document.createElement('button'); b.id='updPill'; b.textContent='✨ A new update is ready · tap to reload'; b.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:90;background:#5b52a8;color:#fff6e9;border:0;border-radius:999px;padding:10px 16px;font:800 13px/1 var(--ui);box-shadow:0 6px 18px rgba(0,0,0,.3)'; b.onclick=()=>{ try{ save(); }catch(e){} location.href='canyon.html?v='+j.v; }; document.body.appendChild(b); } }).catch(()=>{});
   setTimeout(chk,5000); setInterval(chk,180000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) chk(); }); }
 window.__fox={todaysAsks,dayKey,closeSheet,get world(){ return world; },camera,renderer,startVista,LOOKS,MLOOKS,WONDERS,startWilds,playScene,get scene(){ return scene; },groundH,get cine(){ return cine; },endHunt,routeTo,goCamp,toggleDeco,press:k=>{ if(k==='jump') jumpQ=true; if(k==='act') actQ=true; if(k==='roll') rollQ=true; if(k==='coffee') coffeeQ=true; if(k==='use') interactQ=true; },move:(x,z)=>{ botMove=x===null?null:{x,z,m:Math.min(1,Math.hypot(x,z))}; },get ctx(){return ctxNow;},get tele(){return tele;},get S(){return S;},get P(){return P;},get B(){return B;},get hunt(){return hunt;},get mode(){return mode;},startHunt,talk,inter:()=>inter,findCtx,doInteract,damageBrute,feat,CH,ZB};
