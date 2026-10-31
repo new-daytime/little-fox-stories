@@ -1267,44 +1267,62 @@ function showDisc(x,z,r,p){ const y=Math.max(CH(x,z),CH(x+r*.7,z),CH(x-r*.7,z),C
 function hideTele(){ if(tele) for(const k in tele) tele[k].visible=false; }
 
 
-/* =============== DUNE WYRM =============== */
+/* =============== DUNE WYRM (a sleek desert dragon) =============== */
 function makeWyrm(scale){
   const root=new THREE.Group(), body=new THREE.Group(); root.add(body); root.scale.setScalar(scale||1);
   const R=2.2, mats=[];
   const tm=(c,e)=>{ const m=new THREE.MeshToonMaterial({color:col(c),gradientMap:gradTex,emissive:col(e||'#000000')}); mats.push(m); return m; };
-  const skin=tm('#e39a5c'), belly=tm('#f3d2a0'), plateM=tm('#8a5a3a'), plate2=tm('#a8693e');
-  // head
-  const head=new THREE.Group(); head.position.set(0,R*.95,0); body.add(head);
-  const hm=mesh(new THREE.IcosahedronGeometry(R*.78,1),skin,0,0,0,head); hm.scale.set(1.05,.9,1.15); hm.material.flatShading=true;
-  mesh(new THREE.SphereGeometry(R*.62,12,8),belly,0,-.45,.55,head).scale.set(1,.6,1);
-  const coreMat=new THREE.MeshToonMaterial({color:col('#ffd27a'),gradientMap:gradTex,emissive:col('#000000')}); mats.push(coreMat);
-  const core=mesh(new THREE.OctahedronGeometry(.42),coreMat,0,R*.62,.4,head); core.scale.y=1.4;
-  // armor plates (the "shell")
-  const shell=new THREE.Group(); body.add(shell);
-  const hplates=new THREE.Group(); head.add(hplates); for(let i=0;i<7;i++){ const p=mesh(new THREE.DodecahedronGeometry(.62,0),i%2?plateM:plate2,0,0,0,hplates); p.position.set((i-3)*.32,R*.5+Math.cos((i-3)*.5)*.25,-.2-Math.abs(i-3)*.1); p.scale.set(.9,.45,1.1); p.rotation.set(-.3,0,(i-3)*.25); }
-  // segments trail behind the head
-  const segs=[]; for(let i=1;i<=6;i++){ const s=new THREE.Group(); const r=R*(.72-i*.07); s.position.set(0,R*.9-i*.12,-i*R*.78); body.add(s); const sm=mesh(new THREE.IcosahedronGeometry(r,1),i%2?skin:tm('#d4884e'),0,0,0,s); sm.material.flatShading=true; sm.scale.set(1,.85,1.05);
-    const pl=mesh(new THREE.DodecahedronGeometry(r*.75,0),i%2?plateM:plate2,0,r*.55,0,s); pl.scale.set(1,.42,1.1); shell.add(pl); pl.userData.seg=s; segs.push({g:s,r,pl}); }
-  // keep plates attached to their segments
-  shell.userData.sync=()=>{ for(const sg of segs){ sg.pl.position.set(sg.g.position.x,sg.g.position.y+sg.r*.55,sg.g.position.z); sg.pl.rotation.y=sg.g.rotation.y; } };
-  // face
-  const face=new THREE.Group(); face.position.set(0,.15,R*.8); head.add(face);
+  const skin=tm('#d98a4e'), belly=tm('#f2c98a'), dark=tm('#8a4a2a'), bone=tm('#fff3e0'), wingM=tm('#b8553a');
+  wingM.side=THREE.DoubleSide;
+  // low, sleek torso
+  const BY=1.3;
+  const torso=mesh(new THREE.SphereGeometry(1,18,12),skin,0,BY,0,body); torso.scale.set(.8,.62,1.9);
+  const bel=mesh(new THREE.SphereGeometry(1,14,10),belly,0,BY-.18,.2,body); bel.scale.set(.66,.45,1.6);
+  // crouched legs, splayed out like a lizard
+  for(const [x,z] of [[-.7,1.05],[.7,1.05],[-.75,-1.05],[.75,-1.05]]){ const sd=Math.sign(x); const th=mesh(new THREE.CylinderGeometry(.22,.18,.8,7),skin,x+sd*.15,BY-.35,z,body); th.rotation.z=sd*.6; const sh=mesh(new THREE.CylinderGeometry(.16,.13,.7,7),skin,x+sd*.38,.4,z+.05,body); sh.rotation.z=-sd*.15; mesh(new THREE.SphereGeometry(.22,8,6),dark,x+sd*.42,.1,z+.2,body).scale.set(1.1,.45,1.5); for(const t of [-.1,0,.1]) mesh(new THREE.ConeGeometry(.045,.24,4),bone,x+sd*.42+t,.08,z+.5,body).rotation.x=1.5; }
+  // long neck reaching forward
+  const neck=mesh(new THREE.CylinderGeometry(.26,.42,1.9,9),skin,0,BY+.55,1.95,body); neck.rotation.x=1.05;
+  for(let i=0;i<4;i++) mesh(new THREE.ConeGeometry(.1,.32,4),dark,0,BY+.95+i*.16,1.5+i*.3,body).rotation.x=-.3;
+  const head=new THREE.Group(); head.position.set(0,BY+1.05,2.95); body.add(head);
+  const hm=mesh(new THREE.SphereGeometry(.5,14,10),skin,0,0,0,head); hm.scale.set(.95,.78,1.1);
+  const snout=mesh(new THREE.SphereGeometry(.36,12,8),skin,0,-.12,.62,head); snout.scale.set(.8,.55,1.55);
+  const jaw=mesh(new THREE.SphereGeometry(.3,10,8),belly,0,-.3,.55,head); jaw.scale.set(.75,.35,1.5);
+  for(const sd of [-1,1]) mesh(new THREE.SphereGeometry(.045,6,4),dark,sd*.12,-.02,1.15,head);
+  // frill fins behind the head
+  const frill=new THREE.Group(); frill.position.set(0,.1,-.3); head.add(frill); for(const sd of [-1,1]){ const f=mesh(new THREE.ConeGeometry(.22,.75,3),wingM,sd*.42,.05,-.15,frill); f.rotation.set(-1.2,0,sd*1.1); }
+  // breakable horns: a big pair sweeping forward, Diablos style
+  const horns=new THREE.Group(); head.add(horns); for(const sd of [-1,1]){ const h=new THREE.Group(); h.position.set(sd*.34,.3,-.05); horns.add(h); const a=mesh(new THREE.ConeGeometry(.16,1.3,6),bone,sd*.25,.35,.25,h); a.rotation.set(.95,0,-sd*.55); }
+  // face: smaller, sharper eyes
+  const face=new THREE.Group(); face.position.set(0,.1,.32); head.add(face);
   const eyes=[], lids=[], brows=[];
-  for(const s of [-1,1]){ const e=mesh(new THREE.SphereGeometry(.36,12,10),tm('#fff6e9'),s*.58,.2,0,face); e.scale.set(1,1.1,.6);
-    const p=mesh(new THREE.SphereGeometry(.17,10,8),new THREE.MeshBasicMaterial({color:col('#2b2230')}),s*.58,.18,.2,face); eyes.push(p);
-    const lid=mesh(new THREE.SphereGeometry(.38,12,10,0,Math.PI*2,0,Math.PI/2),skin,s*.58,.2,0,face); lid.scale.set(1.02,1.12,.66); lids.push(lid);
-    const brow=mesh(new THREE.BoxGeometry(.5,.12,.12),tm('#7a4d33'),s*.58,.68,.18,face); brow.rotation.z=s*-.3; brows.push(brow); }
-  const mouth=mesh(new THREE.TorusGeometry(.3,.07,6,14,Math.PI),tm('#7a3f3a'),0,-.45,.1,face); mouth.rotation.z=Math.PI;
-  // fangs = the breakable "horns"
-  const horns=new THREE.Group(); head.add(horns); for(const s of [-1,1]){ const h=mesh(new THREE.ConeGeometry(.22,1.3,5),tm('#fff3dc'),s*.75,-.45,R*.85,horns); h.rotation.set(1.2,0,s*.35); }
-  const glow=glowSprite(TEX.warm,R*3.6,0); glow.position.set(0,R*1.4,.4); body.add(glow);
-  const shadow=new THREE.Mesh(new THREE.CircleGeometry(2.4,24),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.22,depthWrite:false})); shadow.rotation.x=-Math.PI/2; shadow.position.set(0,.05,-2.4); shadow.scale.set(1,2.2,1); root.add(shadow);
+  for(const s of [-1,1]){ const e=mesh(new THREE.SphereGeometry(.17,12,10),tm('#fff3c4'),s*.3,.05,0,face); e.scale.set(1,1.05,.6);
+    const p=mesh(new THREE.SphereGeometry(.09,10,8),new THREE.MeshBasicMaterial({color:col('#2b2230')}),s*.3,.04,.1,face); p.scale.set(.6,1.2,1); eyes.push(p);
+    const lid=mesh(new THREE.SphereGeometry(.19,12,10,0,Math.PI*2,0,Math.PI/2),skin,s*.3,.05,0,face); lid.scale.set(1.02,1.12,.66); lids.push(lid);
+    const brow=mesh(new THREE.BoxGeometry(.26,.07,.08),dark,s*.3,.2,.08,face); brow.rotation.z=s*-.4; brows.push(brow); }
+  const mouth=mesh(new THREE.TorusGeometry(.12,.03,6,12,Math.PI),tm('#5a2a2a'),0,-.32,.55,face); mouth.rotation.z=Math.PI;
+  for(const sd of [-1,1]) mesh(new THREE.ConeGeometry(.04,.12,4),bone,sd*.12,-.38,.7,face).rotation.x=Math.PI;
+  // sun gem on the chest (the core)
+  const coreMat=new THREE.MeshToonMaterial({color:col('#ffd27a'),gradientMap:gradTex,emissive:col('#000000')}); mats.push(coreMat);
+  const core=mesh(new THREE.OctahedronGeometry(.3),coreMat,0,BY+.05,1.6,body); core.scale.y=1.3;
+  // wings folded up along the back, like a cape
+  for(const sd of [-1,1]){ const w=new THREE.Group(); w.position.set(sd*.5,BY+.45,.7); w.rotation.set(0,0,sd*.35); body.add(w); const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0, sd*1.5,1.3,-.6, sd*.3,.2,-2.2, sd*1.5,1.3,-.6, sd*1.3,.6,-1.6, sd*.3,.2,-2.2],3)); g.computeVertexNormals(); w.add(new THREE.Mesh(g,wingM)); const bn=mesh(new THREE.CylinderGeometry(.06,.05,1.95,5),dark,sd*.75,.65,-.3,w); bn.rotation.set(-.45,0,-sd*.85); mesh(new THREE.ConeGeometry(.08,.3,4),bone,sd*1.55,1.4,-.6,w); }
+  // armor (the "shell"): sand plates along the spine; breakable
+  const shell=new THREE.Group(); body.add(shell); const hplates=new THREE.Group(); head.add(hplates);
+  for(let i=0;i<7;i++){ const p=mesh(new THREE.ConeGeometry(.24-i*.015,.55,4),i%2?dark:tm('#c97a3e'),0,BY+.62-i*.02,1.2-i*.42,shell); p.rotation.x=-.25; }
+  for(let i=0;i<3;i++){ const p=mesh(new THREE.ConeGeometry(.12,.35,4),dark,0,.45,-.05-i*.2,hplates); p.rotation.x=-.4; }
+  // slim tail in segments (wiggles)
+  const segs=[]; for(let i=1;i<=8;i++){ const s=new THREE.Group(); const r=.4-i*.04; const y0=BY-.05-i*.09, z0=-1.6-i*.58; s.position.set(0,y0,z0); body.add(s); mesh(new THREE.SphereGeometry(r,10,8),i%2?skin:dark,0,0,0,s).scale.set(1,.9,1.6);
+    const pl=mesh(new THREE.ConeGeometry(r*.45,r*1.3,4),dark,0,y0+r*.9,z0,shell); segs.push({g:s,r,pl,y0,z0}); }
+  { const tip=segs[segs.length-1].g; const sp=mesh(new THREE.ConeGeometry(.3,.8,3),wingM,0,0,-.45,tip); sp.rotation.x=-Math.PI/2; sp.scale.set(1,1,.35); }
+  shell.userData.sync=()=>{ for(const sg of segs){ sg.pl.position.set(sg.g.position.x,sg.g.position.y+sg.r*.9,sg.g.position.z); } };
+  const glow=glowSprite(TEX.warm,R*3,0); glow.position.set(0,BY,1.6); body.add(glow);
+  const shadow=new THREE.Mesh(new THREE.CircleGeometry(2,24),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.22,depthWrite:false})); shadow.rotation.x=-Math.PI/2; shadow.position.set(0,.05,-.8); shadow.scale.set(.8,2.2,1); root.add(shadow);
   const zzz=[0,1,2].map(i=>{ const c=document.createElement('canvas'); c.width=c.height=64; const g=c.getContext('2d'); g.font='bold 52px Gaegu, cursive'; g.fillStyle='#fff6e9'; g.textAlign='center'; g.fillText(i===1?'Z':'z',32,48); const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false})); s.scale.set(.8,.8,1); s.visible=false; root.add(s); return s; });
   return {root,body,core,coreMat,shell,rings:[],eyes,lids,brows,horns,face,mouth,zzz,R,shadow,mats,glow,head,segs,hplates,wyrm:true,coreGlow:'#c9781a',glowTex:TEX.warm};
 }
-function wyrmAnim(dt,T,moving){ const w=brute; if(!w||!w.segs) return; const k=moving?1:.35;
-  w.segs.forEach((s,i)=>{ const ph=T*(moving?7:2.2)-i*.75; s.g.position.x=Math.sin(ph)*.55*k*(1+i*.12); s.g.position.y=w.R*.9-(i+1)*.12+Math.abs(Math.sin(ph))*.25*k; s.g.rotation.y=Math.cos(ph)*.3*k; });
-  w.head.rotation.z=Math.sin(T*(moving?7:2.2)+.6)*.08*k; w.shell.userData.sync(); }
+function wyrmAnim(dt,T,moving){ const w=brute; if(!w||!w.segs) return; const k=moving?1:.35, sp=moving?6:2;
+  w.segs.forEach((s,i)=>{ const ph=T*sp-i*.6; s.g.position.x=Math.sin(ph)*.35*k*(1+i*.25); s.g.position.y=s.y0+Math.abs(Math.sin(ph))*.08*k; s.g.rotation.y=Math.cos(ph)*.35*k; });
+  w.head.rotation.y=Math.sin(T*sp*.5)*.12*k; w.head.position.y=2.35+Math.sin(T*sp)*.05; w.shell.userData.sync(); }
 
 /* =============== MINI MONSTERS =============== */
 const MOBT={pricklet:{name:'Pricklet',hp:56,dmg:8,spd:3.9,r:.7,drop:'thorn',p:.6},crab:{name:'Pebble Crab',hp:85,dmg:11,spd:3,r:.85,drop:'ore',p:.45},hopper:{name:'Sand Hopper',hp:64,dmg:9,spd:4.4,r:.7,drop:'glass',p:.5},ccrab:{name:'Cactus Crab',hp:100,dmg:12,spd:3,r:.9,drop:'spine',p:.6}};
