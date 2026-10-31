@@ -1890,6 +1890,10 @@ function resize(){ const w=innerWidth,h=innerHeight; renderer.setPixelRatio(Math
 addEventListener('resize',resize); resize();
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
 document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+// iPad Safari: block double-tap zoom on fast taps, and snap back if the page ever gets zoomed anyway
+{ let lastT=0; document.addEventListener('touchend',e=>{ const n=Date.now(); if(n-lastT<350&&!e.target.closest('.sheet,#results,input,textarea')) e.preventDefault(); lastT=n; },{passive:false});
+  document.addEventListener('touchmove',e=>{ if(e.touches.length>1) e.preventDefault(); },{passive:false});
+  const vp=window.visualViewport; if(vp) vp.addEventListener('resize',()=>{ if(vp.scale>1.02){ const m=document.querySelector('meta[name=viewport]'); if(m){ const c=m.content; m.content=c.replace(/,?\s*maximum-scale=[^,]*/,'')+',maximum-scale=1'; setTimeout(()=>{ m.content=c; },300); } } }); }
 let perfT=0,perfN=0,perfCool=0;
 function perfWatch(rdt){ if(window.__noRender||document.hidden) return; perfCool=Math.max(0,perfCool-rdt); perfT+=rdt; perfN++; if(perfT>=2){ const avg=perfT/perfN; perfT=0; perfN=0; if(avg>.034&&perfScale>.62&&!perfCool){ perfScale=Math.max(.6,perfScale-.15); if(perfScale<.8) renderer.shadowMap.type=THREE.PCFShadowMap; resize(); perfCool=3; } } }
 let last=performance.now(), T=0, hudT=0, notesT=0, lastCtxLabel='';
@@ -1949,7 +1953,7 @@ requestAnimationFrame(t=>{ last=t; $('loading').style.display='none';
   frame(t); });
 document.addEventListener('visibilitychange',()=>{ last=performance.now(); });
 /* ---- update checker: tells her when a new version is live ---- */
-const BUILD='1793421825';
+const BUILD='1793424711';
 if(IN_SET&&BUILD){ const chk=()=>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{ if(j.v&&j.v!==BUILD&&!document.getElementById('updPill')){ const b=document.createElement('button'); b.id='updPill'; b.textContent='✨ A new update is ready · tap to reload'; b.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:90;background:#5b52a8;color:#fff6e9;border:0;border-radius:999px;padding:10px 16px;font:800 13px/1 var(--ui);box-shadow:0 6px 18px rgba(0,0,0,.3)'; b.onclick=()=>{ try{ save(); }catch(e){} location.href='canyon.html?v='+j.v; }; document.body.appendChild(b); } }).catch(()=>{});
   setTimeout(chk,5000); setInterval(chk,180000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) chk(); }); }
 window.__fox={get world(){ return world; },camera,renderer,startVista,LOOKS,MLOOKS,WONDERS,startWilds,groundH,get cine(){ return cine; },endHunt,routeTo,goCamp,toggleDeco,press:k=>{ if(k==='jump') jumpQ=true; if(k==='act') actQ=true; if(k==='roll') rollQ=true; if(k==='coffee') coffeeQ=true; if(k==='use') interactQ=true; },move:(x,z)=>{ botMove=x===null?null:{x,z,m:Math.min(1,Math.hypot(x,z))}; },get ctx(){return ctxNow;},get tele(){return tele;},get S(){return S;},get P(){return P;},get B(){return B;},get hunt(){return hunt;},get mode(){return mode;},startHunt,talk,inter:()=>inter,findCtx,doInteract,damageBrute,feat,CH,ZB};
