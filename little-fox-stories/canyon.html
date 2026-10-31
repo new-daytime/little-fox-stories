@@ -1928,6 +1928,10 @@ requestAnimationFrame(t=>{ last=t; $('loading').style.display='none';
   if(!S.met.juniper){ setTimeout(()=>{ say('Juniper wants to talk.',3); callout('Walk to {n:Old Juniper} and tap Talk.',4.5); },700); }
   frame(t); });
 document.addEventListener('visibilitychange',()=>{ last=performance.now(); });
+/* ---- update checker: tells her when a new version is live ---- */
+const BUILD='1793420645';
+if(IN_SET&&BUILD){ const chk=()=>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{ if(j.v&&j.v!==BUILD&&!document.getElementById('updPill')){ const b=document.createElement('button'); b.id='updPill'; b.textContent='✨ A new update is ready · tap to reload'; b.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:90;background:#5b52a8;color:#fff6e9;border:0;border-radius:999px;padding:10px 16px;font:800 13px/1 var(--ui);box-shadow:0 6px 18px rgba(0,0,0,.3)'; b.onclick=()=>{ try{ save(); }catch(e){} location.href='canyon.html?v='+j.v; }; document.body.appendChild(b); } }).catch(()=>{});
+  setTimeout(chk,5000); setInterval(chk,180000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) chk(); }); }
 window.__fox={get world(){ return world; },camera,renderer,startVista,LOOKS,MLOOKS,WONDERS,startWilds,groundH,get cine(){ return cine; },endHunt,routeTo,goCamp,toggleDeco,press:k=>{ if(k==='jump') jumpQ=true; if(k==='act') actQ=true; if(k==='roll') rollQ=true; if(k==='coffee') coffeeQ=true; if(k==='use') interactQ=true; },move:(x,z)=>{ botMove=x===null?null:{x,z,m:Math.min(1,Math.hypot(x,z))}; },get ctx(){return ctxNow;},get tele(){return tele;},get S(){return S;},get P(){return P;},get B(){return B;},get hunt(){return hunt;},get mode(){return mode;},startHunt,talk,inter:()=>inter,findCtx,doInteract,damageBrute,feat,CH,ZB};
 })();
 </script>

@@ -2,6 +2,7 @@
 <meta property="og:type" content="website"><meta property="og:url" content="https://new-daytime.github.io/little-fox-stories/"><meta property="og:title" content="Little Fox Stories"><meta property="og:description" content="A canyon adventure made just for you. Hunt, explore, and win real rewards."><meta property="og:image" content="https://new-daytime.github.io/little-fox-stories/art/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://new-daytime.github.io/little-fox-stories/art/og.jpg"><meta name="description" content="A canyon adventure made just for you.">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}</style>
 <script src="cloud.js"></script>
+<script>(function(){ var B="1793420645"; fetch("version.json?"+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){ if(j.v&&j.v!==B&&sessionStorage.getItem("foxReload")!==j.v){ sessionStorage.setItem("foxReload",j.v); location.replace("index.html?v="+j.v); } }).catch(function(){}); })();</script>
 <title>Little Fox Stories</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -510,8 +511,8 @@ const HUNTS=[{id:'brute',name:'The Tumblebrute'},{id:'wyrm',name:'The Dune Wyrm'
 const UPDATES=[{id:'u-open',title:'The Wilds opened up',items:['No more walls: rolling hills, candy trees, giant flowers and a rainbow','Floating mountains, a waterfall island and aurora lights on the horizon','Climb 3 spires (the Lookout has a telescope) to see the whole world','Climbing is easier now: hold any direction to go up']},{id:'u-moves',title:'New moves: jump, swim, climb, glide',items:['Jump! (the purple button, or Space)','Swim across the lake and ponds. It uses stamina','Walk into glowing vine walls to climb','Bounce on golden mushrooms, then tap Jump in the air: your dragonfly carries you','3 Moon Pearls are hidden up high in the Wilds']},{id:'u-wilds',title:'New: The Wilds + a bigger camp',items:['Walk through the Moon Gate at camp to step out into the Wilds: no monsters, just magic','Find wonders, read story stones, catch wisps. Something new happens every night','Your pets come along and sniff out hidden treasure','New at camp: a To-do desk, an Arcade for every sidequest, and a mysterious library door']},{id:'u-mojave',title:'Chapter 2: The Mojave is here',items:['Win 3 Tumblebrute hunts and Juniper opens the Mojave','A new monster: the Dune Wyrm swims under the sand. Make its dive hit a salt flat','New weapons, a desert tee, a sun hat, and a kitty to rescue','R left another page out there somewhere…']},{id:'u-pets',title:'New: Pet Lounge + Pip’s errands',items:['Every hunt is different now: the Tumblebrute naps somewhere new, and herbs and ore move around','Pip has a new errand every hunt. Look for the purple dot on your map','A Pet Lounge at camp. Master a monster and its baby moves in','The Tumblebrute learns new tricks at 3 and 4 wins']},{id:'u-armory',title:'New: the Tumblebrute fights back',items:['It hunts you now. Once it finds you, it won’t give up','Every win changes the next hunt: moonlit nights, a new spin move, and random twists','The Forge has an Armory: see your fox hold every weapon','A Photo Wall at camp keeps a picture of every viewpoint you find']},{id:'u-dress',title:'New: the Dressing Room',items:['Tap the Closet at camp to try on outfits on your fox','New hats, glasses, backpacks and 2 new tees to unlock','Daily bounties at Juniper’s board: +45 coins a day','Your progress can now save to the cloud. Tap ☁ up top']},{id:'u-launch',title:'Season 1 is here',items:['A real Gift Shop: Starbucks cards and Apple Pay cash','Weekly quests that reset every Friday','16 Moon Shards to find, for a $1,000 legendary prize','Levels, XP and Fox Coins for every play']}];
 function mojOpen(){ const c=LS.get('foxCampaign1',{}); const h=(c.hunts||{}).brute||{}; return (h.clears||0)+(h.captures||0)>=3; }
 const SEASON=[
-  {id:'c1',title:'The Canyon',sub:'Hunt the Tumblebrute',done:p=>!!p.huntFirst.brute,href:'canyon.html',art:'canyon',img:'art/ch-canyon.jpg'},
-  {id:'c2',title:'The Mojave',get sub(){ return mojOpen()?'Hunt the Dune Wyrm':'Opens at 3 Tumblebrute wins'; },done:p=>!!p.huntFirst.wyrm,get soon(){ return !mojOpen(); },href:'canyon.html',art:'desert',img:'art/ch-mystery.jpg',tint:'desert'},
+  {id:'c1',title:'The Canyon',sub:'Hunt the Tumblebrute',done:p=>!!p.huntFirst.brute,href:'canyon.html?v=1793420645',art:'canyon',img:'art/ch-canyon.jpg'},
+  {id:'c2',title:'The Mojave',get sub(){ return mojOpen()?'Hunt the Dune Wyrm':'Opens at 3 Tumblebrute wins'; },done:p=>!!p.huntFirst.wyrm,get soon(){ return !mojOpen(); },href:'canyon.html?v=1793420645',art:'desert',img:'art/ch-mystery.jpg',tint:'desert'},
   {id:'c3',title:'The Gym',sub:'The Gym Golem awaits',soon:true,art:'gym',img:'art/ch-pond.jpg'},
   {id:'c4',title:'???',sub:'Locked',soon:true,art:'q',img:'art/ch-mystery.jpg'},
   {id:'c5',title:'???',sub:'Locked',soon:true,art:'q',img:'art/ch-pond.jpg',tint:'night'},
@@ -538,13 +539,13 @@ const SHARDS=[
   {name:'??? The Edge of the Earth',test:p=>!!p.seasonDone}];
 const QUEST_POOL=[
   {id:'stories2',text:'Play any 2 sidequests',goal:2,count:e=>e.filter(x=>x.k==='story').length,go:'#stories'},
-  {id:'hunt1',text:'Go on a hunt in Canyon Hunt',goal:1,count:e=>e.filter(x=>x.k==='hunt').length,go:'canyon.html'},
-  {id:'gold1',text:'Win a hunt without getting knocked out',goal:1,count:e=>e.filter(x=>x.k==='hunt'&&x.faints===0).length,go:'canyon.html'},
+  {id:'hunt1',text:'Go on a hunt in Canyon Hunt',goal:1,count:e=>e.filter(x=>x.k==='hunt').length,go:'canyon.html?v=1793420645'},
+  {id:'gold1',text:'Win a hunt without getting knocked out',goal:1,count:e=>e.filter(x=>x.k==='hunt'&&x.faints===0).length,go:'canyon.html?v=1793420645'},
   {id:'days3',text:'Visit camp on 3 different days',goal:3,count:(e,p,wk)=>p.days.filter(d=>d>=wk).length,go:null},
   {id:'replay1',text:'Replay a story you already finished',goal:1,count:e=>e.filter(x=>x.k==='story'&&x.replay).length,go:'#stories'},
-  {id:'forge1',text:'Craft something at the Forge',goal:1,count:e=>e.filter(x=>x.k==='craft').length,go:'canyon.html'},
+  {id:'forge1',text:'Craft something at the Forge',goal:1,count:e=>e.filter(x=>x.k==='craft').length,go:'canyon.html?v=1793420645'},
   {id:'stories3',text:'Play 3 sidequests',goal:3,count:e=>e.filter(x=>x.k==='story').length,go:'#stories'},
-  {id:'hunt2',text:'Go on 2 hunts',goal:2,count:e=>e.filter(x=>x.k==='hunt').length,go:'canyon.html'}];
+  {id:'hunt2',text:'Go on 2 hunts',goal:2,count:e=>e.filter(x=>x.k==='hunt').length,go:'canyon.html?v=1793420645'}];
 
 /* ========================================================= */
 const LS={get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); return true; }catch(e){ return false; } }};
@@ -656,28 +657,28 @@ function nextAction(){
   const s=STORIES.find(x=>!p.storyFirst[x.id]);
   if(s) return {eyebrow:Object.keys(p.storyFirst).length?'Up next':'Start here',title:'Play '+s.name,why:'A quick sidequest. Finish it for coins and a Moon Shard.',href:s.href,gain:[['coin','+'+PAY.storyFirst],['shard','+1 shard']]};
   const h=HUNTS.find(x=>x.id==='brute'&&!p.huntFirst[x.id]);
-  if(h) return {eyebrow:'Main game',title:'Hunt '+h.name,why:'Your biggest payout yet. Bring coffee.',href:h.id==='brute'?'canyon.html':'hunt.html',gain:[['coin','+'+PAY.huntFirst],['shard','+1 shard']]};
+  if(h) return {eyebrow:'Main game',title:'Hunt '+h.name,why:'Your biggest payout yet. Bring coffee.',href:h.id==='brute'?'canyon.html?v=1793420645':'hunt.html',gain:[['coin','+'+PAY.huntFirst],['shard','+1 shard']]};
   const g=HUNTS.find(x=>x.id==='brute'&&!p.huntGold[x.id]);
   const wq=weekQuests(), ev=weekEvents(LS.get('foxEvents',[])), wk=dayKey(weekStart());
   const q=wq.find(q=>q.count(ev,p,wk)<q.goal&&q.go);
   if(q) return {eyebrow:'Weekly quest',title:q.text,why:'Finish all three this week for a bonus.',href:q.go,gain:[['coin','+'+PAY.quest]]};
-  if(g) return {eyebrow:'Moon Shard',title:'Beat '+g.name+' without getting knocked out',why:'Roll out of the red zones. Drink coffee early.',href:g.id==='brute'?'canyon.html':'hunt.html',gain:[['shard','+1 shard'],['coin','+'+PAY.noRescue]]};
+  if(g) return {eyebrow:'Moon Shard',title:'Beat '+g.name+' without getting knocked out',why:'Roll out of the red zones. Drink coffee early.',href:g.id==='brute'?'canyon.html?v=1793420645':'hunt.html',gain:[['shard','+1 shard'],['coin','+'+PAY.noRescue]]};
   return {eyebrow:'All caught up',title:'Replay a favorite',why:'New chapters drop Friday. Replays still earn coins.',href:'#stories',gain:[['coin','+'+PAY.storyReplay]]};
 }
 function todoItems(){
   const ev=LS.get('foxEvents',[]), played3d=ev.some(e=>e.k==='hunt'&&e.v);
   const L=[];
   // 1. main quest
-  if(!played3d) L.push({big:1,isNew:1,eyebrow:'Main quest',title:'Enter the 3D Canyon Hunt',why:'A whole new world. Track the Tumblebrute under the moon.',href:'canyon.html',thumb:'art/hunt.jpg'});
-  else if(!p.huntFirst.brute) L.push({big:1,eyebrow:'Main quest',title:'Hunt the Tumblebrute',why:'Your biggest payout yet. Bring coffee.',href:'canyon.html',thumb:'art/hunt.jpg'});
-  else if(!p.huntGold.brute) L.push({big:1,eyebrow:'Main quest · Moon Shard',title:'Win without getting knocked out',why:'Roll out of the red zones. Drink coffee early.',href:'canyon.html',thumb:'art/hunt.jpg'});
-  else L.push({big:1,eyebrow:'Main quest',title:'Back to the canyon',why:'Secrets, viewpoints and a meaner Tumblebrute.',href:'canyon.html',thumb:'art/hunt.jpg'});
+  if(!played3d) L.push({big:1,isNew:1,eyebrow:'Main quest',title:'Enter the 3D Canyon Hunt',why:'A whole new world. Track the Tumblebrute under the moon.',href:'canyon.html?v=1793420645',thumb:'art/hunt.jpg'});
+  else if(!p.huntFirst.brute) L.push({big:1,eyebrow:'Main quest',title:'Hunt the Tumblebrute',why:'Your biggest payout yet. Bring coffee.',href:'canyon.html?v=1793420645',thumb:'art/hunt.jpg'});
+  else if(!p.huntGold.brute) L.push({big:1,eyebrow:'Main quest · Moon Shard',title:'Win without getting knocked out',why:'Roll out of the red zones. Drink coffee early.',href:'canyon.html?v=1793420645',thumb:'art/hunt.jpg'});
+  else L.push({big:1,eyebrow:'Main quest',title:'Back to the canyon',why:'Secrets, viewpoints and a meaner Tumblebrute.',href:'canyon.html?v=1793420645',thumb:'art/hunt.jpg'});
   // 2. something new: reward ready > daily bounties > weekly quest > shards
   const camp=LS.get('foxCampaign1',{}), dk=dayKey(), bt=camp.bounty&&camp.bounty.day===dk?camp.bounty:null, bn=bt?bt.ids.filter(i=>bt.done&&bt.done[i]).length:0;
   const ready=MILESTONES.find(m=>m.test(p)&&!p.milestones[m.id]&&canClaimToday(m.r));
   const wq=weekQuests(), wev=weekEvents(ev), wk=dayKey(weekStart()); const q=wq.find(q=>q.count(wev,p,wk)<q.goal&&q.go);
   if(ready) L.push({isNew:1,eyebrow:'You won a real reward',title:'Claim your '+rLabel(R(ready.r)),why:'“'+ready.label+'” is done. It’s yours.',href:'#shop',ico:'coin'});
-  else if(bn<3&&p.huntFirst.brute) L.push({isNew:!bt,eyebrow:'Daily bounties · '+bn+'/3',title:bt?'Finish today’s bounties':'New bounties are up',why:'Juniper has 3 quick jobs. +45 Fox Coins for all three.',href:'canyon.html',ico:'coin'});
+  else if(bn<3&&p.huntFirst.brute) L.push({isNew:!bt,eyebrow:'Daily bounties · '+bn+'/3',title:bt?'Finish today’s bounties':'New bounties are up',why:'Juniper has 3 quick jobs. +45 Fox Coins for all three.',href:'canyon.html?v=1793420645',ico:'coin'});
   else if(q) L.push({eyebrow:'This week’s quest',title:q.text,why:'Finish all three this week for a bonus.',href:q.go,ico:'fly'});
   else L.push({eyebrow:'Moon Prize',title:'Find your next Moon Shard',why:'Tap a shard to see how to find it.',href:'#shop',ico:'shard'});
   // 3. sidequest
