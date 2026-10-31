@@ -1157,18 +1157,22 @@ function announceCamp(){ const a=[]; if(forgeNew()) a.push('{p:Forge}'); if(clos
 function goCamp(){ SND.setMood('camp'); setTimeout(announceCamp,500); fade(()=>{ if(brute){ world.scene.remove(brute.root); } for(const k in (tele||{})) tele[k].visible=false; setScene('camp'); P.x=0; P.z=4; P.ang=Math.PI; P.state='idle'; P.hp=P.maxhp=100; refreshCamp(); camera.position.set(0,14,16); camLook.set(0,1,4); }); }
 
 /* =============== MONSTER AI =============== */
-const isW=()=>!!(B&&B.kind==='wyrm'); const BN=()=>isW()?'Dune Wyrm':'Tumblebrute'; const wy=(a,b)=>isW()?b:a;
+const isW=()=>!!(B&&B.kind==='wyrm'); const _tv=new THREE.Vector3();
+// tail hits: any tail segment touching the player counts, not just the body
+function tailHit(dmg){ if(!brute||!brute.segs) return false; for(const sg of brute.segs){ sg.g.getWorldPosition(_tv); if(Math.hypot(P.x-_tv.x,P.z-_tv.z)<sg.r*1.6+.75&&Math.abs((P.y??_tv.y)-_tv.y)<2.2) return hurtP(dmg,_tv.x,_tv.z); } return false; } const BN=()=>isW()?'Dune Wyrm':'Tumblebrute'; const wy=(a,b)=>isW()?b:a;
 function bruteArrive(){ const L=hunt.lair||'creek'; if(!B||B.state!=='roam'||B.home===L) return; B.home=L; const z=ZB[L], a=Math.atan2(z.x-P.x,z.z-P.z), ax=z.x+Math.sin(a)*z.r*.35, az=z.z+Math.cos(a)*z.r*.35; if(Math.hypot(P.x-B.x,P.z-B.z)>30&&Math.hypot(P.x-ax,P.z-az)>22){ B.x=ax; B.z=az; B.tx=z.x; B.tz=z.z; B.roamT=6; B.cr=null; } setTimeout(()=>{ SND.roar(); shake=Math.max(shake,.25); },700); }
 function bruteNotice(){ if(B.state==='roam'){ SND.roar(); SND.setMood('fight'); B.state='chase'; B.t=0; B.cd=1.5; shake=.35; hunt.noticed=true; hunt.phase='fight'; dust(B.x,B.z,12,5); callout(wy('The {m:Tumblebrute}! {s:Roll} out of the red zones.','The {m:Dune Wyrm} bursts out of the sand! {s:Roll} out of the red zones.'),4); if(isW()) setTimeout(()=>callout('When it {s:dives} at you, stand behind a {i:white salt flat}. It can’t dig through salt.',5),4500); say('Foo’s are BIG.',2.5); } }
 function setB(s){ B.state=s; B.t=0; hideTele(); }
 function chooseAttack(d){ let k; const R=brute.R;
   if(d<R+3.6) k=Math.random()<.6?'burst':'slam'; else k=Math.random()<.58?'charge':'slam';
   if(B.spin&&d<R+5&&Math.random()<.3) k='spin';
+  if(isW()&&d<R+5.5&&angDiff(Math.atan2(P.x-B.x,P.z-B.z),B.ang)>1.9&&Math.random()<.75) k='tail';
   if(B.tired>0&&k==='slam') k='burst'; if(k===B.last&&Math.random()<.55) k=k==='charge'?'slam':'charge'; B.last=k;
   const sp=(B.enraged>0?.72:B.tired>0?1.25:1)*(B.angry?.85:1); B.atk={k,hit:false}; setB('windup');
   if(k==='charge'){ B.atk.wind=.95*sp; B.chAng=Math.atan2(P.x-B.x,P.z-B.z); }
   if(k==='burst'){ B.atk.wind=.85*sp; B.atk.rad=R+3.2; }
   if(k==='spin'){ B.atk.wind=1.0*sp; B.atk.rad=R+4.6; }
+  if(k==='tail'){ B.atk.wind=.7*sp; B.atk.rad=4; B.atk.dir=Math.random()<.5?1:-1; }
   if(k==='slam'){ B.atk.wind=1.0*sp; B.atk.tx=P.x; B.atk.tz=P.z; B.atk.rad=3.1; } }
 function damageBrute(dmg,fx,fz,player){
   if(!B||B.state==='dead'||B.state==='captured'||B.state==='trapped') return 0;
@@ -1217,6 +1221,7 @@ function updateBrute(dt,T){
     case 'chase': { bob=Math.abs(Math.sin(T*3))*.2; if(B.limp&&trap&&trap.armed){ const dd=moveTo(trap.x,trap.z,2.6); if(dd<1.2){ setB('trapped'); trap.armed=false; shake=.3; } break; } if(d>30&&!hunt.trackTip){ hunt.trackTip=1; callout('It’s {s:tracking} you! It won’t give up.',3.5); } if(d>12){ const pz=feat(P.x,P.z).zone.id, bz=feat(B.x,B.z).zone.id; if(pz!==bz){ B.crT=(B.crT||0)-dt; if(!B.cr||B.crT<=0||B.crG!==pz){ B.cr=routeTo(B.x,B.z,pz); B.crG=pz; B.crT=1.5; } const n=B.cr[0]; if(n){ if(moveTo(n.x,n.z,spd)<3) B.cr.shift(); break; } } } if(d>R+2.2) moveTo(P.x,P.z,spd); else face(Math.atan2(dx,dz),4); if(B.cd<=0&&d<24&&P.state!=='down') chooseAttack(d); break; }
     case 'windup': { const A=B.atk, p=Math.min(1,B.t/A.wind);
       if(A.k==='charge'){ if(B.t<A.wind*.6) B.chAng=Math.atan2(dx,dz); face(B.chAng,10); sy=1-.12*p; sx=1+.08*p; showLine(B.x,B.z,B.chAng,18,R*2,p); }
+      if(A.k==='tail'){ showDisc(B.x-Math.sin(B.ang)*3.6,B.z-Math.cos(B.ang)*3.6,A.rad,p); B.ang+=dt*p*-A.dir*1.2; }
       if(A.k==='burst'||A.k==='spin'){ sy=1-.15*p; sx=1+.12*p; showDisc(B.x,B.z,A.rad,p); if(A.k==='spin') B.ang+=dt*p*6; }
       if(A.k==='slam'){ if(B.t<A.wind*.5){ A.tx=P.x; A.tz=P.z; } face(Math.atan2(A.tx-B.x,A.tz-B.z),6); sy=1-.18*p; showDisc(A.tx,A.tz,A.rad,p); }
       if(B.t<dt*1.5) SND.warn();
@@ -1231,7 +1236,8 @@ function updateBrute(dt,T){
         if(B.t>1.0&&isW()&&!A.erupt){ A.erupt=1; B.sink=0; shake=.4; SND.crash(); dust(B.x,B.z,20,7); for(let i=0;i<18;i++){ const a=i/18*6.28; puff(B.x+Math.sin(a)*2,CH(B.x,B.z)+.5,B.z+Math.cos(a)*2,TEX.warm,.45,Math.sin(a)*10,6,Math.cos(a)*10,.6,-14); } if(Math.hypot(P.x-B.x,P.z-B.z)<R+2.6) hurtP(Math.round(18*(B.dmgMul||1)),B.x,B.z); }
         if(B.t>1.0){ if(B.enraged>0&&!A.second&&Math.random()<.5){ A.second=true; B.atk={k:'charge',wind:.45,second:true,hit:false}; B.chAng=Math.atan2(P.x-B.x,P.z-B.z); setB('windup'); } else { setB('recover'); A.rec=.85; } } }
       else if(A.k==='burst'){ if(!A.hit){ A.hit=true; for(let i=0;i<20;i++){ const a=i/20*Math.PI*2; puff(B.x+Math.sin(a)*R,CH(B.x,B.z)+1,B.z+Math.cos(a)*R,TEX.warm,.35,Math.sin(a)*12,1.5,Math.cos(a)*12,.35,0); } if(d<A.rad+.3) hurtP(Math.round((B.enraged>0?20:16)*(B.dmgMul||1)),B.x,B.z); shake=.2; } if(B.t>.3){ setB('recover'); A.rec=.7; } }
-      else if(A.k==='spin'){ B.ang+=dt*18; brute.rings.forEach(r=>r.rotation.x+=dt*10); A.n=A.n||0; const at=[0,.8];
+      else if(A.k==='tail'){ B.ang+=dt*A.dir*7.5; if(!A.hit&&tailHit(Math.round(17*(B.dmgMul||1)))) A.hit=true; if(Math.random()<dt*30){ const t=brute.segs[brute.segs.length-1].g; t.getWorldPosition(_tv); dust(_tv.x,_tv.z,1,2); } if(B.t>.6){ setB('recover'); A.rec=.75; } }
+      else if(A.k==='spin'){ if(!A.tailHit&&tailHit(Math.round(14*(B.dmgMul||1)))) A.tailHit=true; B.ang+=dt*18; brute.rings.forEach(r=>r.rotation.x+=dt*10); A.n=A.n||0; const at=[0,.8];
         if(A.n<2&&B.t>=at[A.n]){ A.n++; for(let i=0;i<24;i++){ const a=i/24*Math.PI*2; puff(B.x+Math.sin(a)*R,CH(B.x,B.z)+.8,B.z+Math.cos(a)*R,TEX.warm,.35,Math.sin(a)*15,1,Math.cos(a)*15,.35,0); } shake=.22; dust(B.x,B.z,10,6); if(Math.hypot(P.x-B.x,P.z-B.z)<A.rad+.3) hurtP(Math.round(14*(B.dmgMul||1)),B.x,B.z); }
         if(B.t>1.1){ setB('recover'); A.rec=.8; } }
       else if(A.k==='slam'){ const k=Math.min(1,B.t/.6); B.x=lerp(A.sx,A.tx,k); B.z=lerp(A.sz,A.tz,k); bob=Math.sin(k*Math.PI)*5;
