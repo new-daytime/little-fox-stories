@@ -1483,13 +1483,13 @@ function updateBrute(dt,T){
       break; }
     case 'recover': { if(B.t>((B.atk&&B.atk.rec)||.9)){ setB('chase'); B.cd=rand(.5,1.2)*(B.enraged>0?.6:1)*(B.limp?2:1); } sy=1-.05*Math.sin(B.t*8); break; }
     case 'stun': { sy=1+Math.sin(T*20)*.04; if(B.t>(B.stunLen||2.4)){ setB('chase'); B.cd=.4; B.stunLen=0; } break; }
-    case 'retreat': { const n=B.route[0]||ZB[hunt.den]||ZONES[0]; let dd=moveTo(n.x,n.z,B.t<.8?0:9.5); if(dd<3&&B.route.length>1){ B.route.shift(); dd=99; } bob=Math.abs(Math.sin(T*8))*.25; if(B.t<.8){ sy=1+Math.sin(T*30)*.06; } if(dd<1.5){ setB('sleep'); B.sleepT=0; brute.zzz.forEach(z=>z.visible=true); callout(wy('It’s asleep in its nest. Sneak up for a big hit!','It curled up in the sand to sleep. Sneak up for a big hit!'),4); } break; }
+    case 'retreat': { if(B.t>22){ const z=ZB[hunt.den]||ZONES[0]; dust(B.x,B.z,12,5); B.x=z.x; B.z=z.z; B.route=[]; } const n=B.route[0]||ZB[hunt.den]||ZONES[0]; let dd=moveTo(n.x,n.z,B.t<.8?0:9.5); if(dd<3&&B.route.length>1){ B.route.shift(); dd=99; } bob=Math.abs(Math.sin(T*8))*.25; if(B.t<.8){ sy=1+Math.sin(T*30)*.06; } if(dd<1.5){ setB('sleep'); B.sleepT=0; brute.zzz.forEach(z=>z.visible=true); callout(wy('It’s asleep in its nest. Sneak up for a big hit!','It curled up in the sand to sleep. Sneak up for a big hit!'),4); } break; }
     case 'sleep': { sy=1+Math.sin(T*1.4)*.05; B.hp=Math.min(B.maxhp*.55,B.hp+B.maxhp*.006*dt); brute.zzz.forEach((z,i)=>{ const k=(T*.5+i/3)%1; z.position.set(1.2+k*1.2,R*2+.5+k*2.2,.6); z.material.opacity=1-k; }); if(d<6) B.sleepT+=dt; if(B.sleepT>5) wake(); break; }
     case 'trapped': { sx=1+Math.sin(T*30)*.05; if(B.t>2.6){ setB('captured'); hunt.phase='done'; SND.fanfare(); SND.setMood('explore'); callout('Captured! The kitties are so proud.',4); say('Gotcha. You’re coming home with me.',3); setTimeout(()=>endHunt('captured'),2600); } break; }
     case 'dead': case 'captured': { if(B.state==='dead') brute.root.rotation.z=lerp(brute.root.rotation.z,1.3,dt*3); else { sy=1+Math.sin(T*1.2)*.04; } break; }
   } }
-  if(!['act','dead','captured'].includes(B.state)){ const o={x:B.x,z:B.z}; for(const k of world.rocks){ const ddx=o.x-k.x, ddz=o.z-k.z, dd=Math.hypot(ddx,ddz), mn=k.r+R*.8; if(dd<mn&&dd>0){ o.x=k.x+ddx/dd*mn; o.z=k.z+ddz/dd*mn; } } walkClamp(o,R*.8); B.x=o.x; B.z=o.z; }
-  if(isW()){ const A=B.atk; const under=B.state==='roam'||(B.state==='chase'&&d>13&&!B.limp)||B.state==='retreat'||(B.state==='act'&&A&&A.k==='charge'&&!A.erupt); const was=B.sink||0; B.sink=lerp(was,under?1:0,Math.min(1,dt*(under?3.5:6)));
+  if(!['act','dead','captured'].includes(B.state)){ const o={x:B.x,z:B.z}; for(const k of ((B.sink||0)>.5?[]:world.rocks)){ const ddx=o.x-k.x, ddz=o.z-k.z, dd=Math.hypot(ddx,ddz), mn=k.r+R*.8; if(dd<mn&&dd>0){ o.x=k.x+ddx/dd*mn; o.z=k.z+ddz/dd*mn; } } walkClamp(o,R*.8); const off=Math.hypot(o.x-B.x,o.z-B.z); B.high=off>1.5; if(off>1.5){ const k=Math.min(1,dt*2.5); B.x=lerp(B.x,o.x,k); B.z=lerp(B.z,o.z,k); } else { B.x=o.x; B.z=o.z; } }
+  if(isW()){ const A=B.atk; const under=B.state==='roam'||(B.state==='chase'&&d>13&&!B.limp)||B.state==='retreat'||(B.state==='act'&&A&&A.k==='charge'&&!A.erupt&&!P.ridge&&!B.high); const was=B.sink||0; B.sink=lerp(was,under?1:0,Math.min(1,dt*(under?3.5:6)));
     if(was>.6&&B.sink<=.6){ dust(B.x,B.z,14,6); shake=Math.max(shake,.15); } if(B.sink>.5&&Math.random()<dt*14) dust(B.x+rand(-1,1),B.z+rand(-1,1),2,2); }
   // render
   const by=CH(B.x,B.z);
@@ -1641,10 +1641,14 @@ function buildRidgeVines(){ world.vines=world.vines||[]; world.ridgeTops=[]; con
     const mx=(A.x+Bz.x)/2, mz=(A.z+Bz.z)/2; side=-side; const nx=-dz/L*side, nz=dx/L*side; let x=mx,z=mz,d=0; for(;d<40;d+=.25){ x=mx+nx*d; z=mz+nz*d; if(feat(x,z).s>-.45) break; } if(d>=40) continue;
     let tx=x,tz=z; for(let k=0;k<30;k+=.5){ tx=x+nx*k; tz=z+nz*k; if(feat(tx,tz).s>9.5) break; }
     const gy=CH(x,z), top=CH(tx,tz); if(top-gy<4) continue; const h=top-gy+.4;
-    const g=new THREE.Group(); g.position.set(x+nx*.4,gy,z+nz*.4); g.rotation.y=Math.atan2(-nx,-nz); world.scene.add(g);
-    for(let i=0;i<3;i++){ const st=mesh(new THREE.BoxGeometry(.12,h*1.15,.12),vm,-.5+i*.5,h*.55,-.6,g); st.rotation.x=-.5; } for(let i=0;i<Math.round(h*3);i++){ const k=rand(.05,1); const lf=mesh(new THREE.IcosahedronGeometry(.2,0),i%4?vm:fm,rand(-.8,.8),k*h,-k*h*.55,g); lf.scale.z=.4; }
-    const gl=glowSprite(TEX.warm,2.4,.55); gl.position.set(0,1.4,.2); g.add(gl);
-    world.vines.push({x,z,ux:nx,uz:nz,top:top+.05,lx:tx,lz:tz,ridge:true}); world.ridgeTops.push({x:tx,z:tz,y:top}); } }
+    // the vine hugs the slope from the base all the way to the ledge, and the climb follows it
+    const L2=Math.hypot(tx-x,tz-z), n=Math.max(4,Math.ceil(L2/.8)), pts=[]; for(let i=0;i<=n;i++){ const u=i/n, px=x+(tx-x)*u, pz=z+(tz-z)*u; pts.push(new THREE.Vector3(px,Math.max(CH(px,pz),gy+(top-gy)*u)+.12,pz)); }
+    const sx=-nz, sz=nx, up=new THREE.Vector3(0,1,0); let len=0;
+    for(let i=0;i<n;i++){ const a=pts[i], b=pts[i+1], dl=a.distanceTo(b); len+=dl; const dir=b.clone().sub(a).normalize(), q=new THREE.Quaternion().setFromUnitVectors(up,dir);
+      for(const o of [-.45,0,.45]){ const st=mesh(new THREE.CylinderGeometry(.06,.06,dl*1.05,5),vm,(a.x+b.x)/2+sx*o,(a.y+b.y)/2,(a.z+b.z)/2+sz*o); st.quaternion.copy(q); world.scene.add(st); }
+      if(i%1===0) for(let j=0;j<2;j++){ const lf=mesh(new THREE.IcosahedronGeometry(.2,0),(i+j)%5?vm:fm,a.x+sx*rand(-.7,.7),a.y+.08,a.z+sz*rand(-.7,.7)); lf.scale.y=.45; world.scene.add(lf); } }
+    const gl=glowSprite(TEX.warm,2.4,.55); gl.position.set(x-nx*.3,gy+1.2,z-nz*.3); world.scene.add(gl);
+    world.vines.push({x,z,ux:nx,uz:nz,top:top+.05,lx:tx,lz:tz,ridge:true,path:pts,len}); world.ridgeTops.push({x:tx,z:tz,y:top}); } }
 /* ---- jumping, swimming, climbing, bouncing, gliding ---- */
 function vertical(dt,inp){ const pl=world.plats||[], wa=world.water||[], vi=world.vines||[];
   const g=groundH(P.x,P.z); let surf=g, plat=null;
@@ -1653,7 +1657,12 @@ function vertical(dt,inp){ const pl=world.plats||[], wa=world.water||[], vi=worl
   const floor=wat?Math.max(surf,wat.y-.55):surf;
   if(P.y==null){ P.y=floor; P.air=false; }
   // climbing a vine wall
-  if(!P.climb&&!P.swim&&mode==='hunt'){ for(const v of vi){ if(Math.hypot(P.x-v.x,P.z-v.z)<1.6&&inp.m>.2&&inp.x*v.ux+inp.z*v.uz>.1&&P.y<v.top-.5){ P.climb=v; P.air=false; P.glide=false; if(!S.flags.climbTip2){ S.flags.climbTip2=1; callout('Climbing! Hold any direction to keep going up. Pull away or Jump to let go.',3.5); } break; } } }
+  if(!P.climb&&!P.swim&&mode==='hunt'){ for(const v of vi){ if(Math.hypot(P.x-v.x,P.z-v.z)<1.6&&inp.m>.2&&inp.x*v.ux+inp.z*v.uz>.1&&P.y<v.top-.5){ P.climb=v; P.cu=0; P.air=false; P.glide=false; if(!S.flags.climbTip2){ S.flags.climbTip2=1; callout('Climbing! Hold any direction to keep going up. Pull away or Jump to let go.',3.5); } break; } } }
+  if(P.climb&&P.climb.path){ const v=P.climb, push=inp.x*v.ux+inp.z*v.uz;
+    if(jumpQ||push<-.5){ P.climb=null; P.air=true; P.vy=jumpQ?6:0; P.x-=v.ux*.9; P.z-=v.uz*.9; jumpQ=false; return; }
+    if(inp.m>.2){ P.cu+=3.4*dt; P.t+=dt; } const pts=v.path, n=pts.length-1; let acc=0, i=0; for(;i<n;i++){ const dl=pts[i].distanceTo(pts[i+1]); if(acc+dl>=P.cu) break; acc+=dl; }
+    if(i>=n||P.cu>=v.len){ P.climb=null; P.x=v.lx; P.z=v.lz; P.y=Math.max(v.top,groundH(v.lx,v.lz)); P.air=false; P.plat=null; P.ridge=true; if(!S.flags.ridgeTip){ S.flags.ridgeTip=1; callout('You’re up on the ridge! Look around, then {s:jump off and tap Jump again} to glide down.',4.5); } SND.pop(); say('Made it!',1.6); jumpQ=false; return; }
+    const a=pts[i], b=pts[i+1], u=Math.min(1,(P.cu-acc)/Math.max(.01,a.distanceTo(b))); const tx=lerp(a.x,b.x,u), tz=lerp(a.z,b.z,u); P.x=lerp(P.x,tx,Math.min(1,dt*12)); P.z=lerp(P.z,tz,Math.min(1,dt*12)); P.y=lerp(P.y,lerp(a.y,b.y,u)+.1,Math.min(1,dt*12)); P.ang=Math.atan2(v.ux,v.uz); jumpQ=false; return; }
   if(P.climb){ const v=P.climb; P.x=lerp(P.x,v.x-v.ux*.15,dt*10); P.z=lerp(P.z,v.z-v.uz*.15,dt*10); P.ang=Math.atan2(v.ux,v.uz); const push=inp.x*v.ux+inp.z*v.uz;
     if(inp.m>.2&&push>-.5){ P.y+=4.2*dt; P.t+=dt; } if(jumpQ||push<-.5){ P.climb=null; P.air=true; P.vy=jumpQ?6:0; P.x-=v.ux*.9; P.z-=v.uz*.9; jumpQ=false; return; }
     if(P.y>=v.top-.15){ P.climb=null; P.x=v.lx; P.z=v.lz; P.y=Math.max(v.top,groundH(v.lx,v.lz)); P.air=false; P.plat=null; if(v.ridge){ P.ridge=true; if(!S.flags.ridgeTip){ S.flags.ridgeTip=1; callout('You’re up on the ridge! Look around, then {s:jump off and tap Jump again} to glide down.',4.5); } } SND.pop(); say('Made it!',1.6); } jumpQ=false; return; }
@@ -2236,7 +2245,7 @@ requestAnimationFrame(t=>{ last=t; $('loading').style.display='none';
   frame(t); });
 document.addEventListener('visibilitychange',()=>{ last=performance.now(); });
 /* ---- update checker: tells her when a new version is live ---- */
-const BUILD='1793489188';
+const BUILD='1793497461';
 if(IN_SET&&BUILD){ const chk=()=>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{ if(j.v&&j.v!==BUILD&&!document.getElementById('updPill')){ const b=document.createElement('button'); b.id='updPill'; b.textContent='✨ A new update is ready · tap to reload'; b.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:90;background:#5b52a8;color:#fff6e9;border:0;border-radius:999px;padding:10px 16px;font:800 13px/1 var(--ui);box-shadow:0 6px 18px rgba(0,0,0,.3)'; b.onclick=()=>{ try{ save(); }catch(e){} location.href='canyon.html?v='+j.v; }; document.body.appendChild(b); } }).catch(()=>{});
   setTimeout(chk,5000); setInterval(chk,180000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) chk(); }); }
 window.__fox={todaysAsks,dayKey,closeSheet,get world(){ return world; },camera,renderer,startVista,LOOKS,MLOOKS,WONDERS,startWilds,playScene,get scene(){ return scene; },groundH,get cine(){ return cine; },endHunt,routeTo,goCamp,toggleDeco,press:k=>{ if(k==='jump') jumpQ=true; if(k==='act') actQ=true; if(k==='roll') rollQ=true; if(k==='coffee') coffeeQ=true; if(k==='use') interactQ=true; },move:(x,z)=>{ botMove=x===null?null:{x,z,m:Math.min(1,Math.hypot(x,z))}; },get ctx(){return ctxNow;},get tele(){return tele;},get S(){return S;},get P(){return P;},get B(){return B;},get hunt(){return hunt;},get mode(){return mode;},startHunt,talk,inter:()=>inter,findCtx,doInteract,damageBrute,feat,CH,ZB};
