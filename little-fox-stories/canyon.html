@@ -487,14 +487,14 @@ function makeEnv(scene,P){
     vertexShader:'varying vec3 vP; void main(){ vP=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
     fragmentShader:'uniform vec3 top; uniform vec3 mid; uniform vec3 bottom; varying vec3 vP; void main(){ float h=vP.y; vec3 c = h>0.08 ? mix(mid, top, smoothstep(0.08,0.55,h)) : mix(bottom, mid, smoothstep(-0.05,0.08,h)); gl_FragColor=vec4(c,1.0); }'}));
   scene.add(sky); scene.fog=new THREE.Fog(col(P.fog),P.fogN||50,P.fogF||170);
-  { const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d'); const gr=g.createRadialGradient(118,112,10,128,128,120); gr.addColorStop(0,'#fffaf0'); gr.addColorStop(.8,'#f6e7c8'); gr.addColorStop(1,'#e9d3b0'); g.fillStyle=gr; g.beginPath(); g.arc(128,128,120,0,Math.PI*2); g.fill();
+  let moon,halo; { const c=document.createElement('canvas'); c.width=c.height=256; const g=c.getContext('2d'); const gr=g.createRadialGradient(118,112,10,128,128,120); gr.addColorStop(0,'#fffaf0'); gr.addColorStop(.8,'#f6e7c8'); gr.addColorStop(1,'#e9d3b0'); g.fillStyle=gr; g.beginPath(); g.arc(128,128,120,0,Math.PI*2); g.fill();
     g.fillStyle='rgba(190,170,150,.35)'; for(const [x,y,r] of [[90,100,22],[160,150,30],[150,80,14],[100,170,16],[185,105,10]]){ g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); }
-    const mt=new THREE.CanvasTexture(c); mt.encoding=THREE.sRGBEncoding; const moon=new THREE.Sprite(new THREE.SpriteMaterial({map:mt,fog:false,depthWrite:false,transparent:true,toneMapped:false})); moon.scale.set(70,70,1); moon.position.set(P.moon?P.moon[0]:-160,P.moon?P.moon[1]:120,P.moon?P.moon[2]:-380); moon.renderOrder=-1; sky.add(moon);
-    const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.white,fog:false,depthWrite:false,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,color:col('#ffe6c4')})); halo.scale.set(190,190,1); halo.position.copy(moon.position); halo.renderOrder=-2; sky.add(halo); }
+    const mt=new THREE.CanvasTexture(c); mt.encoding=THREE.sRGBEncoding; moon=new THREE.Sprite(new THREE.SpriteMaterial({map:mt,fog:false,depthWrite:false,transparent:true,toneMapped:false})); moon.scale.set(70,70,1); moon.position.set(P.moon?P.moon[0]:-160,P.moon?P.moon[1]:120,P.moon?P.moon[2]:-380); moon.renderOrder=-1; sky.add(moon);
+    halo=new THREE.Sprite(new THREE.SpriteMaterial({map:TEX.white,fog:false,depthWrite:false,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,color:col('#ffe6c4')})); halo.scale.set(190,190,1); halo.position.copy(moon.position); halo.renderOrder=-2; sky.add(halo); }
   const hemi=new THREE.HemisphereLight(col(P.hemiSky),col(P.hemiGround),P.hemiI); scene.add(hemi);
   const sun=new THREE.DirectionalLight(col(P.sun),P.sunI); sun.castShadow=true; sun.shadow.mapSize.set(1536,1536); const sc=sun.shadow.camera; sc.left=-30; sc.right=30; sc.top=30; sc.bottom=-30; sc.near=1; sc.far=200; sun.shadow.bias=-.0006; sun.shadow.normalBias=.02;
   scene.add(sun); scene.add(sun.target);
-  return {sky,sun,hemi,P,sunOff:new THREE.Vector3(...P.sunPos)}; }
+  return {sky,sun,hemi,P,moon,halo,sunOff:new THREE.Vector3(...P.sunPos)}; }
 function makeTerrain(scene,o){
   const g=new THREE.PlaneGeometry(o.w,o.d,o.sx,o.sz); g.rotateX(-Math.PI/2); g.translate(o.cx,0,o.cz);
   const pos=g.attributes.position; for(let i=0;i<pos.count;i++) pos.setY(i,o.H(pos.getX(i),pos.getZ(i)));
@@ -989,6 +989,7 @@ function floatTxt(t){ const d=document.createElement('div'); d.className='ftxt';
 // Each monster has 4 chapters: before hunt 1, after win 2, after win 3, after win 5.
 const NEST=[-4,-118], CAPS=[-4,-82];
 const SCENES={
+  opening:OPENING(),
   brute1:BRUTE1(),
   brute2:{boss:'brute',n:2,title:'What It Guards',shots:[
     {cam:{at:NEST,off:[9,7,10]},look:{at:NEST,off:[0,.8,0]},move:2.6,text:'After the hunt, you follow its trail all the way home to the Bramble Nest.'},
@@ -1065,6 +1066,76 @@ function BRUTE1(){ let st={};
     {cut:1,cam:{at:()=>[st.px,st.pz,undefined,P.ang],rel:1,off:[-1,2.2,-3.6]},look:{at:()=>[...pt(14),groundH(...pt(14))+1.4]},drift:[0,.4,-.8],move:0,hold:4.2,who:'You',text:'Let’s find out what it’s protecting.',textAt:1.4,
       act(t,dt){ const a=Math.atan2(-st.fx,-st.fz)+Math.PI*sm(t/.8); const u=sm((t-.8)/3), d=9+u*30; const [x,z]=pt(d+1); putB(x,z,a); if(t>.8){ brute.rings.forEach(r=>r.rotation.x+=dt*16); brute.body.position.y=Math.abs(Math.sin(t*14))*.3; if(Math.random()<dt*10) dust(x,z,2,2); }
         team.forEach(k=>k.g.scale.setScalar(1.15)); }}]}; }
+// ---- the opening: "To the Moon and Back" (plays once at camp) ----
+function OPENING(){ let st={};
+  const NOOK=[-4,-11.6], FIRE=[0,0], FOXF=[1.7,2.1], GATE=[0,-17.6];
+  const moonDir=()=>new THREE.Vector3(-160,120,-380).normalize();
+  const camLookMoon=(fromX,fromZ,h)=>{ const y=groundH(fromX,fromZ)+h, d=moonDir(); return [fromX+d.x*60,fromZ+d.z*60,y+d.y*60]; };
+  const foxAt=(x,z,a,y)=>{ fox.root.position.set(x,y??groundH(x,z),z); fox.root.rotation.y=a; };
+  const page=()=>{ if(st.page) return st.page; const c=document.createElement('canvas'); c.width=128; c.height=160; const g=c.getContext('2d'); g.fillStyle='#fff6e0'; g.fillRect(0,0,128,160); g.strokeStyle='#8a7a70'; g.lineWidth=3; for(let y=28;y<150;y+=16){ g.beginPath(); g.moveTo(14,y); g.lineTo(104+Math.random()*10,y); g.stroke(); } g.fillStyle='#c9604d'; g.font='bold 22px Georgia'; g.fillText('R',100,146);
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(.55,.7),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),side:THREE.DoubleSide})); world.scene.add(m); st.page=m; return m; };
+  return {n:0,title:'To the Moon and Back',
+  setup(){ const E=world.env; st={ms:E.moon?E.moon.scale.x:70,pip:camp.pip.g.position.clone(),pipA:camp.pip.g.rotation.y};
+    setSky(true); if(E.moon){ E.moon.scale.setScalar(70); }
+    // a vision of the monsters waking, on the canyon rim
+    const vb=makeBrute(1.1); const [bx,bz]=[-13,-31.5]; vb.root.position.set(bx,groundH(bx,bz),bz); vb.root.rotation.y=Math.atan2(-bx,-bz); vb.lids.forEach(l=>l.visible=true); vb.root.visible=false; world.scene.add(vb.root); st.vb=vb;
+    const vw=makeWyrm(1); const [wx,wz]=[22,-26]; vw.root.position.set(wx,groundH(wx,wz)-5,wz); vw.root.rotation.y=Math.atan2(-wx,-wz); vw.root.visible=false; world.scene.add(vw.root); st.vw=vw;
+    $('scT').innerHTML='<small>'+(S.met.juniper?'The story so far':'Prologue')+'</small>To the Moon and Back'; },
+  cleanup(){ const E=world.env; setSky(false); if(E.moon) E.moon.scale.setScalar(st.ms||70); if(E.halo) E.halo.material.opacity=.35;
+    if(st.vb) world.scene.remove(st.vb.root); if(st.vw) world.scene.remove(st.vw.root); if(st.page) world.scene.remove(st.page); if(st.book) fox.root.remove(st.book);
+    camp.pip.g.position.copy(st.pip); camp.pip.g.rotation.y=st.pipA; fox.body.position.y=0; fox.legs.forEach(l=>l.rotation.set(0,0,0)); fox.arms.forEach(a=>a.rotation.set(0,0,0));
+    S.flags.opening=1; save(); setTimeout(()=>{ callout('{s:Your story:} calm the monsters the moon wakes, find {i:R’s pages}, and bring the moon back.',6); const r=hunterRank(); if(r) setTimeout(()=>callout('Hunter rank: {s:'+r.name+'}. '+r.next,5),400); },700); },
+  shots:[
+    // 1. Little Fox in the reading nook, book, coffee, sleeping kitties
+    {cut:1,cam:{at:()=>[NOOK[0]+2.4,NOOK[1]+4.8,groundH(...NOOK)+2.1]},look:{at:()=>[NOOK[0],NOOK[1],groundH(...NOOK)+.9]},drift:[-.4,-.2,-.9],move:0,hold:4,text:'Little Fox never liked outside. Books were better. Books had endings.',
+      start(){ if(!st.book){ const b=new THREE.Group(); mesh(new THREE.BoxGeometry(.42,.06,.3),toon('#7a4d9a'),0,0,0,b); mesh(new THREE.BoxGeometry(.4,.07,.28),toon('#fff6e0'),0,.02,0,b); b.position.set(0,.95,.42); b.rotation.x=-.6; fox.root.add(b); st.book=b; } st.book.visible=true; },
+      act(t){ foxAt(NOOK[0],NOOK[1]+.15,0,groundH(...NOOK)+.35); fox.legs.forEach(l=>l.rotation.x=-1.4); fox.arms.forEach((a,i)=>a.rotation.set(-1.1,0,(i?-1:1)*.3)); fox.head.rotation.x=.25+Math.sin(t*.8)*.03;
+        team.forEach((k,i)=>{ const x=NOOK[0]+(i?1.1:-1.1), z=NOOK[1]+1.1; k.g.position.set(x,groundH(x,z),z); k.g.rotation.y=i?-.8:.8; k.g.scale.set(1.15,.85+Math.sin(t*1.5+i)*.03,1.15); }); dfly.g.position.set(NOOK[0]+.8,groundH(...NOOK)+2.2+Math.sin(t*2)*.1,NOOK[1]+.5); }},
+    // 2. the moon is too big; the coffee rattles
+    {cut:1,cam:{at:()=>[4,8,groundH(4,8)+2.2]},look:{at:()=>camLookMoon(4,8,2.2)},move:0,hold:4.2,text:'Then one night, the moon came too close.',textAt:1,
+      act(t){ const E=world.env, k=sm(t/3); if(E.moon) E.moon.scale.setScalar(70+k*95); if(E.halo) E.halo.material.opacity=.35+k*.4; if(t>1.2) shake=Math.max(shake,.12*(1-sm((t-2.4)/1.5))); if(t>1.2&&!this._r){ this._r=1; SND.rumble?SND.rumble():SND.crash(); }
+        foxAt(NOOK[0],NOOK[1]+.15,0,groundH(...NOOK)+.35); fox.head.rotation.x=-.5*sm((t-1.4)/.6); }},
+    // 3. in the canyon, something wakes
+    {cut:1,low:1,cam:{at:()=>[-4.5,-30.5,groundH(-4.5,-30.5)+1.6]},look:{at:()=>[-13,-31.5,groundH(-13,-31.5)+2.4]},drift:[0,0,-.8],start(){ st.vb.root.visible=true; },move:0,hold:3.2,text:'In the canyon, something opened its eyes.',textAt:.6,
+      act(t){ if(t>1&&!this._o){ this._o=1; st.vb.lids.forEach(l=>l.visible=false); st.vb.coreMat.emissive.setRGB(.3,.6,.55); st.vb.eyes.forEach(e=>{ e.material=new THREE.MeshBasicMaterial({color:col('#9ff7e8')}); }); st.vb.glow.material.opacity=.6; SND.roar(); shake=.4; } st.vb.body.scale.set(1,1+(t>1?.08*Math.exp(-(t-1)*3):0),1); st.vb.rings.forEach(r=>r.rotation.y+=.01); }},
+    // 4. under the desert, something sings
+    {cut:1,low:1,cam:{at:()=>[14,-29,groundH(14,-29)+1.6]},look:{at:()=>[22,-26,groundH(22,-26)+2.4]},drift:[0,.3,-.6],start(){ st.vb.root.visible=false; st.vw.root.visible=true; },move:0,hold:3.2,text:'Under the desert, something started to sing.',textAt:.6,
+      act(t){ const k=sm((t-.4)/1.6), y=groundH(22,-26)-5+k*5; st.vw.root.position.y=y; if(k>0&&k<1&&Math.random()<.4) dust(22+rand(-2,2),-26+rand(-2,2),2,3); wyrmAnimFor(st.vw,t); }},
+    // 5. the campfire: Juniper
+    {cut:1,cam:{at:()=>[-1.6,1.6,groundH(-1.6,1.6)+1.6]},look:{at:()=>[-5.4,-3.6,groundH(-5.4,-3.6)+1.4]},drift:[.2,0,-.3],move:0,hold:4,who:'Old Juniper',text:'Last time the moon did this, {n:R} went after it.',
+      start(){ st.vw.root.visible=false; if(st.book) st.book.visible=false; fox.legs.forEach(l=>l.rotation.set(0,0,0)); fox.arms.forEach(a=>a.rotation.set(0,0,0)); camp.pip.g.position.set(-2.6,groundH(-2.6,2.8),2.8); camp.pip.g.rotation.y=Math.atan2(2.6,-2.8); },
+      act(t){ foxAt(...FOXF,Math.atan2(-FOXF[0],-FOXF[1])); }},
+    // 6. Pip
+    {cut:1,cam:{at:()=>[-.6,.4,groundH(-.6,.4)+1]},look:{at:()=>[-2.6,2.8,groundH(-2.6,2.8)+.7]},drift:[0,0,-.3],move:0,hold:3,who:'Pip',text:'R never came back.',
+      act(t){ foxAt(...FOXF,Math.atan2(-FOXF[0],-FOXF[1])); camp.pip.g.scale.y=1+Math.sin(t*30)*.015; }},
+    // 7. a page blows in and lands at her feet
+    {cut:1,cam:{at:()=>[FOXF[0]+2.4,FOXF[1]+2,groundH(...FOXF)+1.9]},look:{at:()=>[FOXF[0],FOXF[1],groundH(...FOXF)+.6]},move:0,hold:3,
+      act(t){ foxAt(...FOXF,Math.atan2(-FOXF[0],-FOXF[1])+Math.min(1,t)*.6); const m=page(), k=sm(t/2.4); m.position.set(FOXF[0]-3+k*3.1+Math.sin(t*4)*.4*(1-k),groundH(...FOXF)+4.5-k*4.4,FOXF[1]-2+k*2.6); m.rotation.set(-Math.PI/2*k+Math.sin(t*6)*.8*(1-k),t*2*(1-k),Math.sin(t*5)*.6*(1-k)); }},
+    // 8. close on the page
+    {cut:1,cam:{at:()=>[FOXF[0]+.15,FOXF[1]+.95,groundH(...FOXF)+1.3]},look:{at:()=>[FOXF[0]+.1,FOXF[1]+.6,groundH(...FOXF)+.05]},move:0,hold:5.2,who:'A torn page, in messy handwriting',text:'“If you’re reading this, the moon is falling again. Follow my pages. Calm what it wakes. I’ll see you at the end. —R”'},
+    // 9. she looks at the gate; a kitty nudges her; the dragonfly lights up
+    {cut:1,cam:{at:()=>[FOXF[0]+2.8,FOXF[1]+4.2,groundH(...FOXF)+3]},look:{at:()=>[GATE[0]*.6+FOXF[0]*.4,GATE[1]*.6+FOXF[1]*.4,groundH(...GATE)+1.6]},drift:[0,0,-.6],move:0,hold:3.6,who:'You',text:'…I don’t like outside.',textAt:.4,
+      start(){ if(st.page) st.page.visible=false; },
+      act(t){ const a=Math.atan2(GATE[0]-FOXF[0],GATE[1]-FOXF[1]); foxAt(...FOXF,a); const k=team[0]; if(k){ const d=sm((t-1)/.8), x=FOXF[0]+.9-d*.45, z=FOXF[1]+.6-d*.2; k.g.position.set(x,groundH(x,z),z); k.g.rotation.y=a-1.2; k.g.scale.set(1.15,1.15,1.15); if(t>1.9) k.g.rotation.z=Math.sin(t*9)*.12; }
+        dfly.g.position.set(FOXF[0]+Math.sin(t*3)*.9,groundH(...FOXF)+1.9+sm((t-2)/.6)*.6,FOXF[1]-1.2+Math.cos(t*3)*.5); if(t>2&&!this._d){ this._d=1; SND.chime(); for(let i=0;i<10;i++) puff(dfly.g.position.x,dfly.g.position.y,dfly.g.position.z,TEX.teal,.35,rand(-2,2),rand(-1,2),rand(-2,2),.8,0); } }},
+    // 10. "But I like endings."
+    {cut:1,cam:{at:()=>[FOXF[0]-.9,FOXF[1]-4.4,groundH(...FOXF)+1.5]},look:{at:()=>[FOXF[0],FOXF[1],groundH(...FOXF)+1.25]},drift:[0,.2,-.3],move:0,hold:3.4,who:'You',text:'But I like endings.',textAt:.9,
+      act(t){ const a=Math.atan2(GATE[0]-FOXF[0],GATE[1]-FOXF[1]); foxAt(...FOXF,a); fox.sword.visible=true; const k=sm((t-.4)/.5); fox.arms[1].rotation.set(-2.9*k,0,0); if(k>.9&&!this._s){ this._s=1; SND.chime(); } }},
+    // 11. title: pull up over camp toward the moon
+    {cut:1,cam:{at:()=>[6,14,groundH(6,14)+5]},look:{at:()=>camLookMoon(0,-6,8)},drift:[0,6,4],move:0,hold:4.6,
+      start(){ $('scT').innerHTML='<span class="big">LITTLE FOX STORIES</span><small>To the Moon and Back</small>'; SND.fanfare(); },
+      act(t){ const a=Math.atan2(GATE[0]-FOXF[0],GATE[1]-FOXF[1]); foxAt(...FOXF,a); fox.sword.visible=true; fox.arms[1].rotation.set(-2.9,0,0); }}]}; }
+function wyrmAnimFor(w,t){ if(!w.segs) return; w.segs.forEach((s,i)=>{ const ph=t*3-i*.6; s.g.position.x=Math.sin(ph)*.3*(1+i*.2); s.g.rotation.y=Math.cos(ph)*.3; }); w.shell.userData.sync(); w.head.rotation.x=-.3+Math.sin(t*2)*.08; }
+// ---- hunter rank: who she is becoming ----
+const HUNTER_RANKS=[
+  {name:'Homebody',ok:()=>true,next:'Win your first hunt to become a {s:Trail Walker}.'},
+  {name:'Trail Walker',ok:()=>wins('brute')>=1,next:'Master the Tumblebrute to become a {s:Canyon Hunter}.'},
+  {name:'Canyon Hunter',ok:()=>rank('brute')>=3,next:'Win a hunt in the Mojave to become a {s:Desert Runner}.'},
+  {name:'Desert Runner',ok:()=>wins('wyrm')>=1,next:'Master the Dune Wyrm to become a {s:Moon Hunter}.'},
+  {name:'Moon Hunter',ok:()=>rank('wyrm')>=3,next:'The moon is still leaning. Keep going.'}];
+function hunterRankI(){ let i=0; HUNTER_RANKS.forEach((r,k)=>{ if(r.ok()) i=k; }); return i; }
+function hunterRank(){ return HUNTER_RANKS[hunterRankI()]; }
+function checkRankUp(){ const i=hunterRankI(); if(S.hrank==null){ S.hrank=i; save(); return; } if(i>S.hrank){ S.hrank=i; save(); SND.fanfare(); setTimeout(()=>callout('New hunter rank: {s:'+HUNTER_RANKS[i].name+'}! '+HUNTER_RANKS[i].next,6),900); } }
 const BOSS_TITLE={brute:['TUMBLEBRUTE','The Rolling Bramble'],wyrm:['DUNE WYRM','The Sand Singer']};
 const sceneId=(bk,n)=>bk+n;
 const sceneSeen=id=>!!(S.scenes||{})[id];
@@ -1273,7 +1344,7 @@ const forgeNew=()=>Object.keys(WEAPONS).some(id=>weaponCan(id)||(S.owned.include
 const closetNew=()=>GALLERY.some(g=>!g.future&&g.ok()&&!seen(g.id));
 function libraryEntries(){ const L=[]; for(const id of S.pages) L.push({id:'page:'+id,title:PAGES[id].title.replace('Torn page · ','R’s journal · '),sub:'A torn page from the hunter R',time:'1 min',col:'#c9a56f',open:()=>readPage(id)});
   if(rank('brute')>=1) L.push({id:'guide:brute:'+rank('brute'),title:'Field Guide · Tumblebrute',sub:stars(rank('brute'))+' '+RANKS[rank('brute')]+(rank('brute')<3?' · more fills in as you hunt':''),time:'2 min',col:'#7f9a6c',html:true,open:()=>readGuide('brute')});
-  for(const id of Object.keys(SCENES)) if(sceneSeen(id)){ const D=SCENES[id]; L.push({id:'scene:'+id,title:(D.boss==='wyrm'?'Dune Wyrm':'Tumblebrute')+' · '+D.n+' of 4',sub:D.title+' · a story scene',time:'1 min',col:D.boss==='wyrm'?'#d9875a':'#7f9a6c',open:()=>sheet('nook',D.title,(D.boss==='wyrm'?'The Dune Wyrm':'The Tumblebrute')+' · scene '+D.n+' of 4','<div class="page">'+D.shots.filter(x=>x.text).map(x=>(x.who?'<b style="font-family:var(--ui);font-size:12px;letter-spacing:.1em;text-transform:uppercase">'+esc(x.who)+'</b><br>':'')+fmt(x.text)).join('<br><br>')+'</div>',[{t:'Back',cls:'alt',fn:renderLibrary},{t:'Close',fn:closeSheet}])}); }
+  for(const id of Object.keys(SCENES)) if(sceneSeen(id)){ const D=SCENES[id]; L.push({id:'scene:'+id,title:!D.boss?'Prologue':(D.boss==='wyrm'?'Dune Wyrm':'Tumblebrute')+' · '+D.n+' of 4',sub:D.title+' · a story scene',time:'1 min',col:D.boss==='wyrm'?'#d9875a':'#7f9a6c',open:()=>sheet('nook',D.title,(D.boss==='wyrm'?'The Dune Wyrm':'The Tumblebrute')+' · scene '+D.n+' of 4','<div class="page">'+D.shots.filter(x=>x.text).map(x=>(x.who?'<b style="font-family:var(--ui);font-size:12px;letter-spacing:.1em;text-transform:uppercase">'+esc(x.who)+'</b><br>':'')+fmt(x.text)).join('<br><br>')+'</div>',[{t:'Back',cls:'alt',fn:renderLibrary},{t:'Close',fn:closeSheet}])}); }
   for(const id of (S.tales||[])){ const t=PIP_TALES[id]; if(t) L.push({id:'tale:'+id,title:t.title,sub:'A story from Pip',time:'1 min',col:'#a8a0ff',open:()=>sheet('nook',t.title,'Reading nook','<div class="page">'+esc(t.text)+'</div>',[{t:'Back',cls:'alt',fn:renderLibrary},{t:'Close',fn:closeSheet}])}); }
   for(const st of STONES) if(((S.wilds||{}).stones||{})[st.id]) L.push({id:'story:'+st.id,title:st.title,sub:'A story stone from the Wilds',time:'1 min',col:'#6f6aa0',open:()=>sheet('nook',st.title,'Reading nook','<div class="page">'+esc(st.text)+'</div>',[{t:'Back',cls:'alt',fn:renderLibrary},{t:'Close',fn:closeSheet}])});
   if(rank('wyrm')>=1) L.push({id:'guide:wyrm:'+rank('wyrm'),title:'Field Guide · Dune Wyrm',sub:stars(rank('wyrm'))+' '+RANKS[rank('wyrm')]+(rank('wyrm')<3?' · more fills in as you hunt':''),time:'2 min',col:'#d9a86a',html:true,open:()=>readGuide('wyrm')});
@@ -1436,9 +1507,9 @@ function endHunt(result){
 function playPend(id){
     const W=isW(), pr=W?CAPS:NEST; fade(()=>{ for(const m of mobs){ m.state='gone'; m.o.g.visible=false; m.tg.visible=false; } B.state='sleep'; B.sink=0; B.x=pr[0]+(W?-4:-3.6); B.z=pr[1]+(W?-3:-3.2); brute.root.rotation.z=0; brute.zzz.forEach(z=>z.visible=false); P.x=pr[0]+.5; P.z=pr[1]+6.5; P.y=null; P.state='idle'; hideTele(); $('pad').style.display='none'; setTimeout(()=>playScene(id,()=>goCamp()),300); }); }
 // hidden test link: canyon.html?scene=brute1 (brute1-4, wyrm1-4) plays that scene right away
-function sceneTest(){ const id=new URLSearchParams(location.search).get('scene'); if(!id||!SCENES[id]) return; const bk=id.replace(/\d/,''), n=+id.slice(-1);
+function sceneTest(){ const id=new URLSearchParams(location.search).get('scene'); if(!id||!SCENES[id]) return; if(id==='opening'){ S.flags.opening=1; playScene('opening'); return; } const bk=id.replace(/\d/,''), n=+id.slice(-1);
   S.met.juniper=1; S.flags.mojIntro=1; if(n===1){ if(S.scenes) delete S.scenes[id]; startHunt(bk); } else { startHunt(bk); setTimeout(()=>{ hunt.done=true; playPend(id); },2500); } }
-function announceCamp(){ const a=[]; if(forgeNew()) a.push('{p:Forge}'); if(closetNew()) a.push('{p:Closet}'); if(nookNew()) a.push('{p:Reading nook}'); if(a.length) setTimeout(()=>callout('Something new at the '+a.join(', ')+'. Look for the NEW tags!',5),900); }
+function announceCamp(){ checkRankUp(); const a=[]; if(forgeNew()) a.push('{p:Forge}'); if(closetNew()) a.push('{p:Closet}'); if(nookNew()) a.push('{p:Reading nook}'); if(a.length) setTimeout(()=>callout('Something new at the '+a.join(', ')+'. Look for the NEW tags!',5),900); }
 function goCamp(){ SND.setMood('camp'); setTimeout(announceCamp,500); fade(()=>{ if(brute){ world.scene.remove(brute.root); } for(const k in (tele||{})) tele[k].visible=false; setScene('camp'); P.x=0; P.z=4; P.ang=Math.PI; P.state='idle'; P.hp=P.maxhp=100; refreshCamp(); camera.position.set(0,14,16); camLook.set(0,1,4); }); }
 
 /* =============== MONSTER AI =============== */
@@ -2016,7 +2087,7 @@ function talk(id){
     const cardW=(rank('brute')>=2?'<div class="li"'+(goal.main==='wyrm'?' style="outline:2.5px solid var(--gold)"':'')+'>'+(goal.main==='wyrm'?'<span class="badge go" style="justify-self:start;width:max-content;margin:0 0 4px">Next up</span>':'')+'<b>The Dune Wyrm '+stars(rank('wyrm'))+' <span class="badge go">Chapter 2</span></b><span><b style="font-weight:900">'+Math.min(wins('wyrm'),5)+' of 5 wins · story '+scenesSeenN('wyrm')+' of 4</b> · The Mojave. It swims under the sand. Make its dive hit a white salt flat.</span><button id="qWyrm" class="gold">Hunt</button></div>':'<div class="li" style="opacity:.6"><b>??? Chapter 2 · The Mojave</b><span>Win '+Math.max(1,3-wins('brute'))+' more Tumblebrute hunt'+(3-wins('brute')===1?'':'s')+' to open it</span></div>');
     const cardX='<div class="li"'+(goal.main==='wilds'?' style="outline:2.5px solid var(--gold)"':'')+'>'+(goal.main==='wilds'?'<span class="badge go" style="justify-self:start;width:max-content;margin:0 0 4px">Next up</span>':'')+'<b>The Wilds</b><span>No monsters. Wonders, story stones, wisps · Moon Pearls '+pearls+' of 3</span><button id="qWilds" class="'+(goal.main==='wilds'?'gold':'alt')+'">Go</button></div>';
     const order=goal.main==='brute'?[cardB,cardW,cardX,cardA]:goal.main==='wyrm'?[cardW,cardX,cardB,cardA]:[cardX,cardW,cardB,cardA];
-    bountyToday().seen=true; save(); sheet('juniper','Old Juniper','Quest board','<p class="line">'+fmt(goal.say)+'</p><div class="keycard"><span>'+fmt(askDone('juniper')?'Today’s favor: done. Thank you. Come back tomorrow.':'{s:Today’s favor:} '+askText('juniper'))+'</span></div><div class="list">'+order.join('')+'</div>'+bountyHTML()+
+    bountyToday().seen=true; save(); sheet('juniper','Old Juniper','Quest board','<div class="keycard" style="background:#2b2752;color:#fff6e9"><span>'+fmt('{s:Your story:} calm the monsters the moon wakes, find {i:R’s pages}, bring the moon back.<br>Hunter rank: <b>'+hunterRank().name+'</b> · '+hunterRank().next)+'</span></div><p class="line">'+fmt(goal.say)+'</p><div class="keycard"><span>'+fmt(askDone('juniper')?'Today’s favor: done. Thank you. Come back tomorrow.':'{s:Today’s favor:} '+askText('juniper'))+'</span></div><div class="list">'+order.join('')+'</div>'+bountyHTML()+
       '<p class="line">'+fmt(S.buff?'You’ve got a '+({latte:'vanilla latte',matcha:'matcha',thai:'Thai tea',special:special().n.toLowerCase()}[S.buff])+' in hand. Good.':'Stop by {p:Mocha’s café} first. A coffee helps more than you’d think.')+'</p>',[{t:'Close',cls:'alt',fn:closeSheet}]);
     $('qGo').onclick=()=>startHunt('brute'); if($('qAngry')) $('qAngry').onclick=()=>startHunt('angry'); if($('qWyrm')) $('qWyrm').onclick=()=>startHunt('wyrm'); if($('qWilds')) $('qWilds').onclick=()=>startWilds();
     const nb=document.createElement('button'); nb.textContent='Field notes'; nb.className='alt'; nb.onclick=showNotes; $('sheet').querySelector('.opts').prepend(nb); return; }
@@ -2186,7 +2257,7 @@ function updateHUD(){
   const hpPct=Math.max(0,P.hp/P.maxhp*100); $('hpBar').firstElementChild.style.width=hpPct+'%'; $('hpBar').classList.toggle('low',hpPct<30); $('stBar').firstElementChild.style.width=P.st+'%';
   $('bars').style.display=mode==='hunt'?'':'none'; $('coffeeBtn').style.display=mode==='hunt'?'':'none'; $('rollBtn').style.display=mode==='hunt'?'':'none';
   let meta=''; if(mode==='hunt'&&hunt&&hunt.variant==='wilds'){ const n=wildsN(); meta+='<span class="chip">Wonders '+n.wonders+'/'+WONDERS.length+'</span><span class="chip">Stories '+n.stones+'/'+STONES.length+'</span><span class="chip">Wisps '+n.wisps+'/'+WISPS.length+'</span><span class="chip" style="background:#5b52a8">'+dailyWonder().name+'</span>'; } else if(mode==='hunt'){ meta+='<span class="chip opt">Coffee ×'+P.coffee+'</span><span class="chip">Tries '+(3-P.faints)+'/3</span><span class="chip opt">Bounties '+bountiesDone()+'/3</span>'+(hunt&&hunt.twist?'<span class="chip">'+hunt.twist.name+'</span>':'')+(hunt&&!hunt.done&&S.pip.st==='active'&&pipErrand()&&pipErrand().reg===REGID?'<span class="chip" style="background:#5b52a8">Pip: '+pipErrand().short+'</span>':''); meta+='<span class="chip opt">Secrets '+(REGID==='mojave'?(MSECRETS.length-mSecretsLeft())+'/'+MSECRETS.length:(secretsTotal-secretsLeft())+'/'+secretsTotal)+'</span>'; if(hunt&&hunt.buff) meta+='<span class="chip">'+{latte:'Latte +HP',matcha:'Matcha +ST',thai:'Thai tea +ATK'}[hunt.buff]+'</span>'; }
-  else { meta+='<span class="chip">'+WEAPONS[S.weapon].name+'</span>'; if(S.buff) meta+='<span class="chip">'+{latte:'Latte ready',matcha:'Matcha ready',thai:'Thai tea ready',special:'Special ready'}[S.buff]+'</span>'; }
+  else { meta+='<span class="chip" style="background:#5b52a8">★ '+hunterRank().name+'</span><span class="chip opt">'+WEAPONS[S.weapon].name+'</span>'; if(S.buff) meta+='<span class="chip">'+{latte:'Latte ready',matcha:'Matcha ready',thai:'Thai tea ready',special:'Special ready'}[S.buff]+'</span>'; }
   $('meta').innerHTML=meta; $('coffeeN').textContent=P.coffee;
   let o=''; if(mode==='camp'){ const nx=NOTES.find(n=>!n.done()&&!['hunt','capture','shell','horns','tracks'].includes(n.id)&&(n.id!=='cafe'||!S.buff)); o=decoMode?'Decorating your camp':(!S.met.juniper?'Talk to Old Juniper at the quest board':!S.hunts.brute?'Talk to Juniper to start the hunt':bountiesDone()<3?'Today’s bounties '+bountiesDone()+'/3 · see {n:Old Juniper}':nx?'Next: '+(nx.secret?nx.hint:nx.t):'Talk to Juniper to hunt again'); }
   else if(hunt&&hunt.variant==='wilds'){ o='Explore the Wilds · tap '+(wildsN().stones<STONES.length?'glowing {i:story stones}':'the {i:Far Gate}')+' and catch {i:wisps}'; }
@@ -2240,6 +2311,7 @@ function frame(now){ const rdt=Math.min(.05,(now-last)/1000); last=now; T+=rdt; 
   ctxNow=findCtx();
   if(!$('sheet').hidden||!$('results').hidden||decoMode||cine||scene||dressMode){ /* paused input */ actQ=rollQ=coffeeQ=interactQ=jumpQ=false; }
   updatePlayer(dt,T);
+  if(mode==='camp'&&!S.flags.opening&&!scene&&!window.__noScenes&&!/scene=/.test(location.search)&&$('sheet').hidden&&!decoMode&&!dressMode&&T>1.2){ S.flags.opening=1; playScene('opening'); }
   if(isHW()){ if(mode==='camp'){ hwWorld(); if(!S.flags.hw2026) hwGift(); } else if(hunt&&!hunt.done) hwHunt(); } if(world.hwAnim) world.hwAnim(rdt,T);
   if(mode==='hunt'){ if(!scene) hunt.t+=dt; updateBrute(dt,T); if(!scene) updateMobs(dt,T);
     if(hunt&&hunt.variant==='wilds') updateWilds(dt,T);
@@ -2292,7 +2364,7 @@ requestAnimationFrame(t=>{ last=t; $('loading').style.display='none'; setTimeout
   frame(t); });
 document.addEventListener('visibilitychange',()=>{ last=performance.now(); });
 /* ---- update checker: tells her when a new version is live ---- */
-const BUILD='1793517032';
+const BUILD='1793560771';
 if(IN_SET&&BUILD){ const chk=()=>fetch('version.json?'+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(j=>{ if(j.v&&j.v!==BUILD&&!document.getElementById('updPill')){ const b=document.createElement('button'); b.id='updPill'; b.textContent='✨ A new update is ready · tap to reload'; b.style.cssText='position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);transform:translateX(-50%);z-index:90;background:#5b52a8;color:#fff6e9;border:0;border-radius:999px;padding:10px 16px;font:800 13px/1 var(--ui);box-shadow:0 6px 18px rgba(0,0,0,.3)'; b.onclick=()=>{ try{ save(); }catch(e){} location.href='canyon.html?v='+j.v; }; document.body.appendChild(b); } }).catch(()=>{});
   setTimeout(chk,5000); setInterval(chk,180000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) chk(); }); }
 window.__fox={todaysAsks,dayKey,closeSheet,get world(){ return world; },camera,renderer,startVista,LOOKS,MLOOKS,WONDERS,startWilds,playScene,get scene(){ return scene; },groundH,get cine(){ return cine; },endHunt,routeTo,goCamp,toggleDeco,press:k=>{ if(k==='jump') jumpQ=true; if(k==='act') actQ=true; if(k==='roll') rollQ=true; if(k==='coffee') coffeeQ=true; if(k==='use') interactQ=true; },move:(x,z)=>{ botMove=x===null?null:{x,z,m:Math.min(1,Math.hypot(x,z))}; },get ctx(){return ctxNow;},get tele(){return tele;},get S(){return S;},get P(){return P;},get B(){return B;},get hunt(){return hunt;},get mode(){return mode;},startHunt,talk,inter:()=>inter,findCtx,doInteract,damageBrute,feat,CH,ZB};
